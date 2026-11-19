@@ -139,6 +139,31 @@ input:-webkit-autofill { animation-name: bayside-autofill; }
   .brand-sub { display: block; }
 }
 
+/* Quick deal controls on the shop page */
+.card.quick-deal { padding: 0; }
+.quick-deal > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .8rem 1rem; }
+.quick-deal > summary::-webkit-details-marker { display: none; }
+.quick-deal > summary:focus-visible { outline: 2px solid var(--red); outline-offset: -2px; border-radius: var(--radius); }
+.qd-head { display: flex; flex-direction: column; min-width: 0; }
+.qd-title { font-weight: 700; font-size: .95rem; }
+.qd-summary { color: var(--muted); font-size: .82rem; margin-top: .1rem; }
+.qd-chev { flex: none; width: .55rem; height: .55rem; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); margin: -.2rem .2rem 0 0; transition: transform .15s; }
+.quick-deal[open] .qd-chev { transform: rotate(-135deg); margin-top: .2rem; }
+.quick-deal[open] > summary { border-bottom: 1px solid var(--line); }
+.qd-body { display: grid; gap: .85rem; padding: .9rem 1rem 1rem; }
+.qd-label { display: block; font-size: .8rem; font-weight: 600; color: var(--muted); margin-bottom: .3rem; }
+.qd-field label { margin-bottom: .3rem; }
+.qd-body .seg { flex-wrap: nowrap; gap: .3rem; }
+.qd-body .seg button { font-size: .78rem; padding: .5rem 0; letter-spacing: -.01em; }
+.qd-down-row { display: flex; gap: .5rem; align-items: center; }
+.qd-down-row input { flex: 1 1 6rem; min-width: 0; }
+.chips { display: flex; gap: .3rem; flex: none; }
+.chip { font: inherit; font-size: .82rem; font-weight: 600; padding: .5rem .6rem; border: 1px solid var(--line); background: #fff; color: var(--muted); border-radius: 999px; cursor: pointer; white-space: nowrap; }
+.chip:hover, .qd-body .seg button:hover:not([aria-pressed="true"]):not(:disabled) { border-color: var(--black); color: var(--black); }
+.chip[aria-pressed="true"] { background: var(--black); border-color: var(--black); color: #fff; }
+.qd-zip input { max-width: 100%; }
+.qd-zip .zip-hint { margin: .35rem 0 0; }
+
 /* Desktop: simple, clean, professional. Mobile styles above stay as they are. */
 @media (min-width: 768px) {
   .site-header {
@@ -175,6 +200,12 @@ input:-webkit-autofill { animation-name: bayside-autofill; }
   .vcard .title { font-size: 1.02rem; font-weight: 700; letter-spacing: -0.015em; }
   .vcard .meta { flex: 1; }
   .vcard .nums { margin-top: auto; padding-top: .85rem; }
+  .card.quick-deal { padding: 0; }
+  .quick-deal > summary { padding: .95rem 1.35rem; }
+  .qd-head { flex-direction: row; align-items: baseline; gap: .9rem; }
+  .qd-body { grid-template-columns: 1fr 1fr; gap: 1rem 1.5rem; padding: 1.1rem 1.35rem 1.25rem; }
+  .qd-body .seg button { font-size: .88rem; padding: .5rem .35rem; }
+  .qd-down-row input, .qd-zip input { height: 40px; }
   .vcard { grid-template-columns: 128px minmax(0, 1fr); gap: 1rem; }
   .vcard .meta { flex: 1; }
   .vhead-top { grid-template-columns: 200px minmax(0, 1fr); gap: 1.25rem; }

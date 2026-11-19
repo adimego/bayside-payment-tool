@@ -7,6 +7,7 @@ import { rankSuggestions } from './ai-hook.js';
 import { initStaffAuth, onStaffChange, isApprovedStaff } from './staff.js';
 import { renderStaff, renderAdmin, renderSharedQuote, bindSaveQuote, updateStaffNav } from './staff-ui.js';
 import { parseShareSlug } from './share.js';
+import { DOWN_CHIPS, normalizeDown, dealSummary, shopHintText } from './deal.js';
 
 const app = document.getElementById('app');
 let inventory = [];
@@ -127,19 +128,21 @@ function badges(v) {
   return `<span class="badge ${v.condition === 'Used' ? 'used' : ''}">${v.condition}</span>${v.certified ? '<span class="badge cert">Certified</span>' : ''}`;
 }
 
-function vehicleCard(v, d, extra = '') {
+function cardNumsHtml(v, d) {
   const q = v.price ? buildQuote({ ...d, vautoPrice: v.price, condition: v.condition, year: v.year, name: v.name }) : null;
+  return q ? `<span class="price">${money0(q.totalSellingPrice)}</span><span class="pay">${money0(q.payment)}<small>/mo est.</small></span>`
+    : '<span class="cfp">Call for Price</span><span></span>';
+}
+
+function vehicleCard(v, d, extra = '') {
   const miles = v.condition === 'Used' && v.odometer ? ` · ${v.odometer.toLocaleString()} mi` : '';
   return `
-  <a class="vcard" href="#/vehicle/${encodeURIComponent(v.stock)}">
+  <a class="vcard" href="#/vehicle/${encodeURIComponent(v.stock)}" data-stock="${esc(v.stock)}">
     ${vehiclePhotoHtml(v)}
     <div class="vbody">
       <div class="top"><span class="title">${esc(v.name)}</span></div>
       <div class="meta">${badges(v)} ${esc(v.type ?? '')} · ${esc(v.color ?? '')}${miles} · Stock ${esc(v.stock)}</div>
-      <div class="nums">
-        ${q ? `<span class="price">${money0(q.totalSellingPrice)}</span><span class="pay">${money0(q.payment)}<small>/mo est.</small></span>`
-            : '<span class="cfp">Call for Price</span><span></span>'}
-      </div>
+      <div class="nums">${cardNumsHtml(v, d)}</div>
       ${extra}
     </div>
   </a>`;
@@ -149,6 +152,119 @@ function vehicleCard(v, d, extra = '') {
 function setTab(tab) {
   document.querySelectorAll('.tabs a').forEach((a) => a.classList.toggle('active', a.dataset.tab === tab));
 }
+
+// ---------- quick deal controls (shop page) ----------
+// Credit, down payment, term and ZIP on the shop page. They edit the same
+// saved `deal` the vehicle page and Find by payment use, and update every
+// card's payment in place (no list rebuild, so scroll and filters stay put).
+const QD_OPEN_KEY = 'bayside.quickdeal.open';
+
+function quickDealOpen() {
+  try {
+    const saved = sessionStorage.getItem(QD_OPEN_KEY);
+    if (saved != null) return saved === '1';
+  } catch { /* private mode */ }
+  return window.matchMedia('(min-width: 768px)').matches;
+}
+
+function quickDealHtml(d) {
+  return `
+    <details class="card quick-deal" id="quick-deal" ${quickDealOpen() ? 'open' : ''}>
+      <summary>
+        <span class="qd-head"><span class="qd-title">Payment settings</span><span class="qd-summary" id="qd-summary">${esc(dealSummary(d, jurFor(d)))}</span></span>
+        <span class="qd-chev" aria-hidden="true"></span>
+      </summary>
+      <div class="qd-body">
+        <div class="qd-field qd-tier"><span class="qd-label" id="qd-tier-l">Credit</span>
+          <div class="seg" role="group" aria-labelledby="qd-tier-l">${TIERS.map((t) => `<button type="button" data-qd-tier="${t.id}" aria-pressed="${t.id === d.tier}">${t.id}</button>`).join('')}</div></div>
+        <div class="qd-field qd-term"><span class="qd-label" id="qd-term-l">Term</span>
+          <div class="seg" role="group" aria-labelledby="qd-term-l">${TERMS.map((t) => `<button type="button" data-qd-term="${t}" aria-pressed="${t === d.term}">${t} mo</button>`).join('')}</div></div>
+        <div class="qd-field qd-down"><label for="qd-down">Down payment</label>
+          <div class="qd-down-row">
+            <input id="qd-down" inputmode="numeric" value="${d.down ? money0(d.down) : ''}" placeholder="$0" autocomplete="off">
+            <div class="chips" role="group" aria-label="Quick down payment">${DOWN_CHIPS.map((c) => `<button type="button" class="chip" data-qd-down="${c}" aria-pressed="${c === (d.down || 0)}">${c >= 1000 ? '$' + (c / 1000).toLocaleString('en-US') + 'k' : '$0'}</button>`).join('')}</div>
+          </div></div>
+        <div class="qd-field qd-zip"><label for="qd-zip">Customer ZIP <span class="optional">(optional)</span></label>
+          <input id="qd-zip" inputmode="numeric" maxlength="10" value="${esc(d.zip || '')}" placeholder="e.g. 22485" autocomplete="postal-code">
+          <p class="hint zip-hint" id="qd-zip-hint">${esc(zipHint(jurFor(d)))}</p></div>
+      </div>
+    </details>`;
+}
+
+let quickDealSync = null; // set while the shop page is showing
+
+function bindQuickDeal(root) {
+  if (!root) return;
+  const downInput = root.querySelector('#qd-down');
+  const zipInput = root.querySelector('#qd-zip');
+  root.addEventListener('toggle', () => { try { sessionStorage.setItem(QD_OPEN_KEY, root.open ? '1' : '0'); } catch { /* ignore */ } });
+
+  const refreshCards = () => {
+    const list = document.getElementById('list');
+    if (!list) return;
+    const byStock = new Map(inventory.map((v) => [v.stock, v]));
+    list.querySelectorAll('.vcard[data-stock]').forEach((card) => {
+      const v = byStock.get(card.dataset.stock);
+      const nums = card.querySelector('.nums');
+      if (v && nums) nums.innerHTML = cardNumsHtml(v, deal);
+    });
+  };
+  const refreshText = () => {
+    const jur = jurFor(deal);
+    const sum = root.querySelector('#qd-summary');
+    if (sum) sum.textContent = dealSummary(deal, jur);
+    const hint = document.getElementById('shop-hint');
+    if (hint) hint.textContent = shopHintText(deal, jur, PROCESSING_FEE);
+    const zh = root.querySelector('#qd-zip-hint');
+    if (zh) zh.textContent = zipHint(jur);
+  };
+  const syncButtons = () => {
+    root.querySelectorAll('[data-qd-tier]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.qdTier === deal.tier)));
+    root.querySelectorAll('[data-qd-term]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.qdTerm) === deal.term)));
+    root.querySelectorAll('[data-qd-down]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.qdDown) === (deal.down || 0))));
+  };
+  const apply = () => { saveDeal(); syncButtons(); refreshText(); refreshCards(); };
+
+  root.querySelectorAll('[data-qd-tier]').forEach((b) => b.addEventListener('click', () => { deal.tier = b.dataset.qdTier; apply(); }));
+  root.querySelectorAll('[data-qd-term]').forEach((b) => b.addEventListener('click', () => { deal.term = Number(b.dataset.qdTerm); apply(); }));
+  root.querySelectorAll('[data-qd-down]').forEach((b) => b.addEventListener('click', () => {
+    deal.down = Number(b.dataset.qdDown);
+    downInput.value = deal.down ? money0(deal.down) : '';
+    apply();
+  }));
+  let downTimer = null;
+  downInput.addEventListener('input', () => {
+    clearTimeout(downTimer);
+    downTimer = setTimeout(() => { deal.down = normalizeDown(downInput.value); apply(); }, 150);
+  });
+  downInput.addEventListener('blur', () => {
+    clearTimeout(downTimer);
+    deal.down = normalizeDown(downInput.value);
+    downInput.value = deal.down ? money0(deal.down) : '';
+    apply();
+  });
+  let lastZip = deal.zip || '';
+  watchField(zipInput, (value) => {
+    if (value === lastZip) return;
+    lastZip = value;
+    applyZipToDeal(deal, value);
+    apply();
+  });
+
+  // Another tab (e.g. a vehicle page) changed the saved deal: mirror it here.
+  quickDealSync = () => {
+    if (!document.body.contains(root)) { quickDealSync = null; return; }
+    if (document.activeElement !== downInput) downInput.value = deal.down ? money0(deal.down) : '';
+    if (document.activeElement !== zipInput) { zipInput.value = deal.zip || ''; lastZip = zipInput.value; }
+    syncButtons(); refreshText(); refreshCards();
+  };
+}
+
+window.addEventListener('storage', (e) => {
+  if (e.key !== DEAL_KEY) return;
+  deal = loadDeal();
+  if (quickDealSync) quickDealSync();
+});
 
 const shopState = { text: '', type: 'Any', condition: 'Any', sort: 'price-asc' };
 
@@ -165,8 +281,9 @@ function renderShop() {
           ${[['price-asc', 'Price: low to high'], ['price-desc', 'Price: high to low'], ['year-desc', 'Newest year'], ['miles-asc', 'Lowest miles']].map(([v, l]) => `<option value="${v}" ${v === shopState.sort ? 'selected' : ''}>${l}</option>`).join('')}
         </select></div>
       </div>
-      <p class="hint">Prices shown are the Total Selling Price (includes the $${PROCESSING_FEE} processing fee). Monthly estimates use your deal settings: ${esc(deal.tier)} credit, ${deal.term} months, ${money0(deal.down)} down. Older vehicles may have a shorter maximum term. Tax and registration follow the ZIP in your deal settings, if you entered one.</p>
+      <p class="hint" id="shop-hint">${esc(shopHintText(deal, jurFor(deal), PROCESSING_FEE))}</p>
     </div>
+    ${quickDealHtml(deal)}
     <p class="count" id="count"></p>
     <div class="grid" id="list"></div>`;
   const draw = () => {
@@ -174,6 +291,7 @@ function renderShop() {
     document.getElementById('count').textContent = `${list.length} vehicle${list.length === 1 ? '' : 's'}`;
     document.getElementById('list').innerHTML = list.length ? list.map((v) => vehicleCard(v, deal)).join('') : '<p class="empty">No vehicles match. Try a different search.</p>';
   };
+  bindQuickDeal(document.getElementById('quick-deal'));
   document.getElementById('f-text').addEventListener('input', (e) => { shopState.text = e.target.value; draw(); });
   document.getElementById('f-type').addEventListener('input', (e) => { shopState.type = e.target.value; draw(); });
   document.getElementById('f-cond').addEventListener('input', (e) => { shopState.condition = e.target.value; draw(); });
