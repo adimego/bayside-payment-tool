@@ -25,4 +25,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - run: git push origin HEAD:refs/heads/gh-pages
+      # Stamp every script and style URL with this commit so phones and
+      # browsers always load the newest code right after a deploy.
+      - name: Stamp asset versions
+        run: |
+          V="${GITHUB_SHA::7}"
+          sed -i -E "s#(from '\./[A-Za-z0-9_-]+\.js)'#\1?v=$V'#g" src/*.js
+          sed -i -E "s#\?v=[A-Za-z0-9_-]+#?v=$V#g" index.html
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git commit -qam "Deploy $V" || true
+      - run: git push --force origin HEAD:refs/heads/gh-pages
