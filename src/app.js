@@ -375,6 +375,7 @@ async function start() {
     const path = (location.hash.replace(/^#/, '') || '/').split('?')[0];
     const top = path.split('/').filter(Boolean)[0];
     if (top === 'staff' || top === 'admin') route();
+    else if (top === 'vehicle' && isApprovedStaff() !== Boolean(document.querySelector('.save-quote'))) route();
   });
   try {
     const res = await fetch('data/inventory.json', { cache: 'no-cache' });

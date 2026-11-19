@@ -288,7 +288,8 @@ async function renderMyQuotes(app) {
 }
 
 export function bindSaveQuote(root, { vehicle, deal, results, getResults }) {
-  if (!isApprovedStaff() || !root || !results) return;
+  if (!isApprovedStaff() || !root || (!results && typeof getResults !== 'function')) return;
+  if (root.querySelector('.save-quote')) return;
   const box = document.createElement('div');
   box.className = 'save-quote';
   box.innerHTML = `
