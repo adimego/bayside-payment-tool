@@ -21,11 +21,35 @@ test('hand-checked example: $39,005, Good, 72 mo, $3,000 down', () => {
   assert.equal(q.payment, 749.53);
 });
 
-test('military / first responder $500 comes off after tax', () => {
-  const q = buildQuote({ vautoPrice: 39005, tier: 'Good', term: 72, military: true });
+test('military / first responder $500 comes off after tax on new vehicles', () => {
+  const q = buildQuote({ vautoPrice: 39005, tier: 'Good', term: 72, military: true, condition: 'New' });
   assert.equal(q.tax, 1700); // tax still on the full $40,000
   assert.equal(q.militaryRebate, 500);
   assert.equal(q.outTheDoor, 41353.5);
+  // N/U = N from the vAuto feed is also treated as new
+  assert.equal(buildQuote({ vautoPrice: 39005, tier: 'Good', term: 72, military: true, condition: 'N' }).militaryRebate, 500);
+});
+
+test('military / first responder rebate is ignored on used vehicles even if requested', () => {
+  const flagged = buildQuote({ vautoPrice: 39005, tier: 'Good', term: 72, military: true, condition: 'Used' });
+  const plain = buildQuote({ vautoPrice: 39005, tier: 'Good', term: 72, military: false, condition: 'Used' });
+  assert.equal(flagged.militaryRebate, 0);
+  assert.equal(flagged.tax, 1700);
+  assert.equal(flagged.outTheDoor, 41853.5); // no $500 off
+  assert.equal(flagged.outTheDoor, plain.outTheDoor);
+  assert.equal(flagged.amountFinanced, plain.amountFinanced);
+  assert.equal(flagged.payment, plain.payment);
+  // N/U = U from the vAuto feed is also treated as used
+  assert.equal(buildQuote({ vautoPrice: 39005, tier: 'Good', term: 72, military: true, condition: 'U' }).militaryRebate, 0);
+});
+
+test('payment-goal ceiling ignores the military rebate for used vehicles', () => {
+  const base = { payment: 750, down: 3000, tier: 'Good', term: 72 };
+  const usedOn = maxVautoPriceForPayment({ ...base, military: true, condition: 'Used' });
+  const usedOff = maxVautoPriceForPayment({ ...base, military: false, condition: 'Used' });
+  const newOn = maxVautoPriceForPayment({ ...base, military: true, condition: 'New' });
+  assert.equal(usedOn, usedOff);
+  assert.ok(newOn > usedOn);
 });
 
 test('negative trade equity is added to the amount financed', () => {

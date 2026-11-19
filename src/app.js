@@ -1,5 +1,5 @@
 // Bayside payment tool UI (phase 1: static, reads data/inventory.json).
-import { buildQuote, TIERS, TERMS, LINKS, DISCLAIMERS, PROCESSING_FEE, REGISTRATION, TAX_RATE, MILITARY_REBATE } from './quote.js';
+import { buildQuote, TIERS, TERMS, LINKS, DISCLAIMERS, PROCESSING_FEE, REGISTRATION, TAX_RATE, MILITARY_REBATE, isUsedVehicle } from './quote.js';
 import { websiteUrl, similarVehicles, findByPaymentGoal, searchInventory } from './inventory.js';
 import { VEHICLE_TYPES } from './vauto-parse.js';
 import { rankSuggestions } from './ai-hook.js';
@@ -37,7 +37,7 @@ function dealParams(d) {
   return p.toString();
 }
 
-function dealFormHtml(d, { idPrefix = 'd' } = {}) {
+function dealFormHtml(d, { idPrefix = 'd', allowMilitary = true } = {}) {
   return `
   <div class="deal-grid">
     <div><label for="${idPrefix}-down">Down payment</label><input id="${idPrefix}-down" name="down" inputmode="decimal" value="${d.down || ''}" placeholder="$0"></div>
@@ -45,7 +45,7 @@ function dealFormHtml(d, { idPrefix = 'd' } = {}) {
     <div><label for="${idPrefix}-trade">Trade-in value</label><input id="${idPrefix}-trade" name="tradeValue" inputmode="decimal" value="${d.tradeValue || ''}" placeholder="$0"></div>
     <div><label for="${idPrefix}-payoff">Trade loan payoff</label><input id="${idPrefix}-payoff" name="tradePayoff" inputmode="decimal" value="${d.tradePayoff || ''}" placeholder="$0"></div>
     <div class="wide"><label>Term</label><div class="seg" role="group" aria-label="Term">${TERMS.map((t) => `<button type="button" data-term="${t}" aria-pressed="${t === d.term}">${t} mo</button>`).join('')}</div></div>
-    <div class="wide"><label class="check"><input type="checkbox" name="military" ${d.military ? 'checked' : ''}> Military or First Responder ($${MILITARY_REBATE} rebate)</label></div>
+    <div class="wide" id="${idPrefix}-military-row" ${allowMilitary ? '' : 'hidden'}><label class="check"><input type="checkbox" name="military" ${d.military ? 'checked' : ''}> Military or First Responder ($${MILITARY_REBATE} rebate)</label></div>
     <div class="wide"><p class="hint">Not sure what your trade is worth? <a href="${LINKS.valueMyTrade}" target="_blank" rel="noopener">Value My Trade</a></p></div>
   </div>`;
 }
@@ -72,7 +72,7 @@ function badges(v) {
 }
 
 function vehicleCard(v, d, extra = '') {
-  const q = v.price ? buildQuote({ ...d, vautoPrice: v.price }) : null;
+  const q = v.price ? buildQuote({ ...d, vautoPrice: v.price, condition: v.condition }) : null;
   const miles = v.condition === 'Used' && v.odometer ? ` · ${v.odometer.toLocaleString()} mi` : '';
   return `
   <a class="vcard" href="#/vehicle/${encodeURIComponent(v.stock)}">
@@ -99,7 +99,7 @@ function renderShop() {
     <h1>In-stock vehicles</h1>
     <div class="card">
       <div class="filters">
-        <div class="wide"><label for="f-text">Search</label><input id="f-text" type="search" placeholder="Model, trim, color, stock #" value="${esc(shopState.text)}"></div>
+        <div class="wide filter-search"><label for="f-text">Search</label><input id="f-text" type="search" placeholder="Model, trim, color, stock #" value="${esc(shopState.text)}"></div>
         <div><label for="f-type">Type</label><select id="f-type"><option>Any</option>${VEHICLE_TYPES.map((t) => `<option ${t === shopState.type ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
         <div><label for="f-cond">New / used</label><select id="f-cond">${['Any', 'New', 'Used'].map((t) => `<option ${t === shopState.condition ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
         <div class="wide"><label for="f-sort">Sort</label><select id="f-sort">
@@ -125,7 +125,7 @@ function renderShop() {
 function breakdownHtml(q) {
   const eq = q.tradeEquity;
   return `
-  <div class="big-pay"><div class="amt">${money(q.payment)}<span style="font-size:1rem">/mo</span></div>
+  <div class="big-pay"><div class="amt">${money(q.payment)}<span class="per">/mo</span></div>
     <div class="sub">${q.term} months at ${q.apr.toFixed(1)}% APR (${esc(q.tier)} credit)</div></div>
   <table class="breakdown">
     <tr><td>Total Selling Price <span class="hint">(incl. $${PROCESSING_FEE} processing fee)</span></td><td>${money(q.totalSellingPrice)}</td></tr>
@@ -152,37 +152,42 @@ function renderVehicle(stock, params) {
   const sims = similarVehicles(v, inventory);
   app.innerHTML = `
     <a class="back" href="#/">← All vehicles</a>
-    <div class="card vhead">
-      <h1>${esc(v.name)}</h1>
-      <div class="sub">${badges(v)} ${esc(v.body ?? '')} · Stock ${esc(v.stock)}</div>
-      <dl class="specs">
-        <dt>Exterior</dt><dd>${esc(v.color ?? '—')}</dd>
-        <dt>Interior</dt><dd>${esc(v.interiorColor ?? '—')}</dd>
-        <dt>Mileage</dt><dd>${v.odometer != null ? v.odometer.toLocaleString() + ' mi' : '—'}</dd>
-        <dt>VIN</dt><dd style="word-break:break-all">${esc(v.vin ?? '—')}</dd>
-        <dt>Total Selling Price</dt><dd>${v.price ? money0(v.price + PROCESSING_FEE) : '<span class="cfp">Call for Price</span>'}</dd>
-      </dl>
-      <p><a class="btn small" href="${websiteUrl(v.stock)}" target="_blank" rel="noopener">See photos and options on baysidecdjrva.com</a></p>
-    </div>
-    ${v.price ? `
     <div class="quote-layout">
-      <div class="card" id="deal-form"><h2>Your deal</h2>${dealFormHtml(d)}</div>
-      <div class="card"><h2>Your quote</h2><div id="quote"></div>
+      <div class="quote-main">
+        <div class="card vhead">
+          <h1>${esc(v.name)}</h1>
+          <div class="sub">${badges(v)} ${esc(v.body ?? '')} · Stock ${esc(v.stock)}</div>
+          <dl class="specs">
+            <dt>Exterior</dt><dd>${esc(v.color ?? '—')}</dd>
+            <dt>Interior</dt><dd>${esc(v.interiorColor ?? '—')}</dd>
+            <dt>Mileage</dt><dd>${v.odometer != null ? v.odometer.toLocaleString() + ' mi' : '—'}</dd>
+            <dt>VIN</dt><dd class="vin">${esc(v.vin ?? '—')}</dd>
+            <dt>Total Selling Price</dt><dd>${v.price ? money0(v.price + PROCESSING_FEE) : '<span class="cfp">Call for Price</span>'}</dd>
+          </dl>
+          <p class="site-link"><a class="btn small" href="${websiteUrl(v.stock)}" target="_blank" rel="noopener">See photos and options on baysidecdjrva.com</a></p>
+        </div>
+        ${v.price ? `
+        <div class="card" id="deal-form"><h2>Your deal</h2>${dealFormHtml(d, { allowMilitary: !isUsedVehicle(v.condition) })}</div>` : `
+        <div class="card"><h2>Call for Price</h2><p>This vehicle doesn't have a listed price yet, so we can't show a payment. Call <a href="tel:+15407752277">(540) 775-2277</a> for a quote.</p>
+          <div class="btns"><a class="btn primary" href="${LINKS.applyForFinancing}" target="_blank" rel="noopener">Apply for Financing</a><a class="btn" href="${LINKS.valueMyTrade}" target="_blank" rel="noopener">Value My Trade</a></div></div>`}
+      </div>
+      ${v.price ? `
+      <aside class="card quote-summary">
+        <h2>Your quote</h2>
+        <div id="quote"></div>
         <div class="btns">
           <a class="btn primary" href="${LINKS.applyForFinancing}" target="_blank" rel="noopener">Apply for Financing</a>
           <a class="btn" href="${LINKS.valueMyTrade}" target="_blank" rel="noopener">Value My Trade</a>
           <button class="btn" id="share" type="button">Copy quote link</button>
         </div>
-      </div>
-    </div>` : `
-    <div class="card"><h2>Call for Price</h2><p>This vehicle doesn't have a listed price yet, so we can't show a payment. Call <a href="tel:+15407752277">(540) 775-2277</a> for a quote.</p>
-      <div class="btns"><a class="btn primary" href="${LINKS.applyForFinancing}" target="_blank" rel="noopener">Apply for Financing</a><a class="btn" href="${LINKS.valueMyTrade}" target="_blank" rel="noopener">Value My Trade</a></div></div>`}
-    <h2>Similar vehicles</h2>
+      </aside>` : ''}
+    </div>
+    <h2 class="similar-heading">Similar vehicles</h2>
     <div class="grid">${sims.length ? sims.map((s) => vehicleCard(s, d)).join('') : '<p class="empty">No close matches in stock right now.</p>'}</div>`;
 
   if (!v.price) return;
   const draw = () => {
-    document.getElementById('quote').innerHTML = breakdownHtml(buildQuote({ ...d, vautoPrice: v.price }));
+    document.getElementById('quote').innerHTML = breakdownHtml(buildQuote({ ...d, vautoPrice: v.price, condition: v.condition }));
     deal = { ...d }; saveDeal();
     history.replaceState(null, '', `#/vehicle/${encodeURIComponent(v.stock)}?${dealParams(d)}`);
   };
@@ -211,7 +216,7 @@ function renderGoal() {
           <div class="wide"><label for="g-cond">New / used</label><select id="g-cond">${['Any', 'New', 'Used'].map((t) => `<option ${t === goalState.condition ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
         </div>
         <hr style="border:0;border-top:1px solid var(--line);margin:1rem 0">
-        ${dealFormHtml(d, { idPrefix: 'g' })}
+        ${dealFormHtml(d, { idPrefix: 'g', allowMilitary: !isUsedVehicle(goalState.condition) })}
       </div>
       <div>
         <div class="ceiling" id="ceiling"></div>
@@ -236,7 +241,12 @@ function renderGoal() {
       : '<p class="empty">Nothing in stock fits that payment yet. Try a longer term, a bigger down payment, or a different type.</p>';
   };
   document.getElementById('g-pay').addEventListener('input', (e) => { goalState.payment = num(e.target.value); draw(); });
-  document.getElementById('g-cond').addEventListener('input', (e) => { goalState.condition = e.target.value; draw(); });
+  document.getElementById('g-cond').addEventListener('input', (e) => {
+    goalState.condition = e.target.value;
+    const row = document.getElementById('g-military-row');
+    if (row) row.hidden = isUsedVehicle(goalState.condition);
+    draw();
+  });
   document.querySelectorAll('[data-type]').forEach((b) => b.addEventListener('click', () => {
     goalState.type = b.dataset.type;
     document.querySelectorAll('[data-type]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));

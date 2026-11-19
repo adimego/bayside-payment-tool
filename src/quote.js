@@ -62,6 +62,12 @@ function num(v) {
   return Number.isFinite(n) ? n : 0;
 }
 
+/** True when the vehicle (or a New/Used filter) is used. Accepts "Used", "U", or "u". */
+export function isUsedVehicle(condition) {
+  const c = String(condition ?? '').trim().toLowerCase();
+  return c === 'used' || c === 'u';
+}
+
 /**
  * Build a full quote.
  * @param {object} o
@@ -72,6 +78,8 @@ function num(v) {
  * @param {string} [o.tier='Good']
  * @param {number} [o.term=72]
  * @param {boolean} [o.military=false]
+ * @param {string} [o.condition]  "New"/"N" or "Used"/"U". The $500 Military / First Responder
+ *   rebate applies only to new vehicles; it is ignored when the vehicle is used.
  */
 export function buildQuote(o) {
   if (o == null || o.vautoPrice == null || !Number.isFinite(Number(o.vautoPrice)) || Number(o.vautoPrice) <= 0) {
@@ -87,7 +95,7 @@ export function buildQuote(o) {
 
   const totalSellingPrice = cents(vautoPrice + PROCESSING_FEE);
   const tax = cents(totalSellingPrice * TAX_RATE);
-  const militaryRebate = military ? MILITARY_REBATE : 0;
+  const militaryRebate = military && !isUsedVehicle(o.condition) ? MILITARY_REBATE : 0;
   const outTheDoor = cents(totalSellingPrice + tax + REGISTRATION - militaryRebate);
   const tradeEquity = cents(tradeValue - tradePayoff); // negative = owes more than it's worth
   const amountFinanced = Math.max(0, cents(outTheDoor - down - tradeEquity));
@@ -127,7 +135,7 @@ export function maxVautoPriceForPayment(o) {
   const apr = aprFor(tier, term);
   const down = Math.max(0, num(o.down));
   const equity = Math.max(0, num(o.tradeValue)) - Math.max(0, num(o.tradePayoff));
-  const militaryRebate = o.military ? MILITARY_REBATE : 0;
+  const militaryRebate = o.military && !isUsedVehicle(o.condition) ? MILITARY_REBATE : 0;
 
   const financed = principalForPayment(payment, apr, term);
   const outTheDoor = financed + down + equity;

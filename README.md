@@ -18,8 +18,8 @@ This is **phase 1**. It covers the quote math, inventory search, vehicle quote p
 | Total Selling Price (TSP) | vAuto price + **$995** processing fee (the feed leaves it out) |
 | Tax | **4.25%** of the full TSP, with no trade-in tax credit |
 | Registration | **$153.50** flat |
-| Military / First Responder | optional **−$500**, applied **after** tax |
-| Out-the-door (OTD) | TSP + tax + $153.50 − $500 (if picked) |
+| Military / First Responder | optional **−$500** on **new** vehicles only, applied **after** tax. Used vehicles are not eligible. |
+| Out-the-door (OTD) | TSP + tax + $153.50 − $500 (if a new vehicle and the rebate is picked) |
 | Trade equity | trade value − loan payoff. Positive equity comes off and negative equity is added. |
 | Amount financed | OTD − down payment − trade equity, never below $0 |
 | Payment | standard amortization: `P = A·r / (1 − (1 + r)^−n)`, where r = APR/12 |

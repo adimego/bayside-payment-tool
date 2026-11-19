@@ -10,6 +10,9 @@
   --card: #fff;
   --ok: #1f7a3f;
   --radius: 12px;
+  --content: 1160px;
+  --pad: 1rem;
+  --shadow: 0 1px 2px rgba(35, 31, 32, 0.04);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: var(--ink);
   background: var(--bg);
@@ -57,12 +60,13 @@ input:focus, select:focus { outline: 2px solid var(--red); outline-offset: 1px; 
 
 .count { color: var(--muted); font-size: .9rem; margin: .25rem 0 .75rem; }
 .grid { display: grid; gap: .8rem; grid-template-columns: 1fr; }
-.vcard { display: block; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: .9rem 1rem; text-decoration: none; color: inherit; }
+.vcard { display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: .9rem 1rem; text-decoration: none; color: inherit; }
 .vcard:hover { border-color: var(--red); box-shadow: 0 2px 8px rgba(35,31,32,.08); }
 .vcard .top { display: flex; justify-content: space-between; gap: .5rem; align-items: baseline; }
 .vcard .title { font-weight: 700; }
 .vcard .meta { color: var(--muted); font-size: .85rem; margin-top: .2rem; }
 .vcard .nums { display: flex; justify-content: space-between; align-items: baseline; margin-top: .6rem; }
+.price, .pay, .breakdown { font-variant-numeric: tabular-nums; }
 .price { font-weight: 700; }
 .pay { color: var(--red); font-weight: 800; font-size: 1.1rem; }
 .pay small { font-weight: 600; font-size: .75rem; color: var(--muted); }
@@ -88,8 +92,10 @@ input:focus, select:focus { outline: 2px solid var(--red); outline-offset: 1px; 
 .breakdown tr.minus td:last-child { color: var(--ok); }
 .breakdown tr.plus td:last-child { color: var(--red); }
 .big-pay { text-align: center; padding: .8rem 0 .4rem; }
-.big-pay .amt { font-size: 2.2rem; font-weight: 800; color: var(--red); }
+.big-pay .amt { font-size: 2.2rem; font-weight: 800; color: var(--red); font-variant-numeric: tabular-nums; }
+.big-pay .per { font-size: 1rem; font-weight: 800; }
 .big-pay .sub { color: var(--muted); font-size: .9rem; }
+.vin { word-break: break-all; }
 .disclaimer { font-size: .8rem; color: var(--muted); background: #f7f8fa; border-left: 3px solid var(--red); padding: .5rem .7rem; margin: .8rem 0; }
 .disclaimer p { margin: .15rem 0; }
 
@@ -107,20 +113,87 @@ input:focus, select:focus { outline: 2px solid var(--red); outline-offset: 1px; 
 .site-footer .fine { font-size: .75rem; }
 .footer-logo { width: 160px; height: auto; display: block; margin-bottom: .5rem; }
 
+.site-footer .footer-logo { border-radius: 8px; }
+
+/* Keep the existing header wordmark treatment on mid-size phones. */
 @media (min-width: 640px) {
   .brand img { height: 52px; }
   .brand-sub { display: block; }
-  .grid { grid-template-columns: 1fr 1fr; }
-  .filters { grid-template-columns: 2fr 1fr 1fr 1fr; }
+}
+
+/* Desktop: simple, clean, professional. Mobile styles above stay as they are. */
+@media (min-width: 768px) {
+  .site-header {
+    padding-left: max(var(--pad), calc(50% - var(--content) / 2));
+    padding-right: max(var(--pad), calc(50% - var(--content) / 2));
+  }
+  .tabs {
+    padding-left: max(var(--pad), calc(50% - var(--content) / 2));
+    padding-right: max(var(--pad), calc(50% - var(--content) / 2));
+    justify-content: flex-start;
+    gap: .15rem;
+    height: 52px;
+  }
+  .tabs a {
+    flex: 0 0 auto;
+    padding: .85rem 1.15rem;
+  }
+  main {
+    max-width: var(--content);
+    padding: 1.5rem 1.5rem 2rem;
+  }
+  h1 { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: .9rem; }
+  h2 { font-size: 1.12rem; font-weight: 700; letter-spacing: -0.01em; }
+  .card { padding: 1.25rem 1.35rem; margin-bottom: 1.25rem; box-shadow: var(--shadow); }
+  .filters { grid-template-columns: 1fr 1fr 1.4fr; gap: .85rem 1rem; }
   .filters .wide { grid-column: auto; }
-  .btns { grid-template-columns: 1fr 1fr 1fr; }
+  .filters .filter-search { grid-column: 1 / -1; }
+  input, select { height: 42px; padding: .5rem .75rem; }
+  .seg button { padding: .55rem .7rem; }
+  .count { margin: .1rem 0 1rem; }
+  .grid { grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .vcard { height: 100%; padding: 1.15rem 1.2rem; box-shadow: var(--shadow); }
+  .vcard:hover { box-shadow: 0 2px 8px rgba(35, 31, 32, 0.08); }
+  .vcard .title { font-size: 1.02rem; font-weight: 700; letter-spacing: -0.015em; }
+  .vcard .meta { flex: 1; }
+  .vcard .nums { margin-top: auto; padding-top: .85rem; }
+  .pay { font-weight: 700; }
+  .specs { grid-template-columns: 9.5rem 1fr; gap: .45rem 1.25rem; }
+  .breakdown .hint { display: block; margin: .1rem 0 0; }
+  .btns { grid-template-columns: 1fr 1fr; gap: .6rem; }
+  .btn { padding: .7rem 1rem; min-height: 44px; display: flex; align-items: center; justify-content: center; }
+  .btn.small { display: inline-flex; min-height: 0; width: auto; padding: .45rem .85rem; }
+  .disclaimer { background: var(--bg); }
+  .similar-heading { margin: 1.75rem 0 1rem; }
+  .site-footer {
+    max-width: var(--content);
+    margin-top: 2rem;
+    padding: 2rem 1.5rem 3rem;
+  }
+  .footer-logo { width: 180px; }
 }
+
 @media (min-width: 960px) {
-  .grid { grid-template-columns: 1fr 1fr 1fr; }
-  .quote-layout { grid-template-columns: 1fr 1fr; align-items: start; }
-}
-@media (min-width: 960px) {
+  .filters { grid-template-columns: 2fr 1fr 1fr 1.35fr; }
+  .filters .filter-search { grid-column: auto; }
+  .quote-layout { grid-template-columns: minmax(0, 1.1fr) minmax(340px, .9fr); gap: 1.35rem; align-items: start; }
+  .quote-main .card:last-child { margin-bottom: 0; }
+  .quote-summary {
+    position: sticky;
+    top: calc(64px + 52px + 1.25rem + env(safe-area-inset-top, 0px));
+    margin-bottom: 0;
+  }
   .quote-layout .btns { grid-template-columns: 1fr 1fr; }
-  .quote-layout .btns .primary { grid-column: 1 / -1; }
+  .quote-layout .btns:has(.btn:nth-child(3)) .primary { grid-column: 1 / -1; }
+  .btn { white-space: nowrap; }
 }
-.site-footer .footer-logo { border-radius: 8px; }
+
+@media (min-width: 1200px) {
+  main { padding: 2rem 1.5rem 2.5rem; }
+  h1 { font-size: 1.85rem; }
+  .card { padding: 1.4rem 1.6rem; }
+  .grid { grid-template-columns: 1fr 1fr 1fr; gap: 1.15rem; }
+  .quote-layout { grid-template-columns: minmax(0, 1.2fr) minmax(360px, .8fr); gap: 1.75rem; }
+  .vcard { padding: 1.25rem 1.35rem; }
+  .vcard .title { font-size: 1.05rem; }
+}

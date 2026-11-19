@@ -54,7 +54,7 @@ export function findByPaymentGoal(inventory, goal) {
     .filter((v) => !goal.type || goal.type === 'Any' || v.type === goal.type)
     .filter((v) => !goal.condition || goal.condition === 'Any' || v.condition === goal.condition)
     .map((vehicle) => {
-      const quote = buildQuote({ ...goal, vautoPrice: vehicle.price });
+      const quote = buildQuote({ ...goal, vautoPrice: vehicle.price, condition: vehicle.condition });
       return { vehicle, quote, gap: Math.round((goal.payment - quote.payment) * 100) / 100 };
     })
     .filter((m) => m.quote.payment <= goal.payment)
