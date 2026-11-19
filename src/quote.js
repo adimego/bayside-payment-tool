@@ -147,8 +147,13 @@ export function isUsedVehicle(condition) {
  * @param {number} [o.taxOverride]  optional decimal tax rate entered by the customer.
  */
 function taxAmount(totalSellingPrice, jur) {
-  let tax = cents(totalSellingPrice * jur.taxRate);
-  if (jur.taxSource !== 'override' && jur.taxCap != null) tax = Math.min(tax, jur.taxCap);
+  // A manual override is the total rate. Otherwise cap (e.g. SC $500) applies only
+  // to the out-of-state vehicle portion; the 0.10% VA business tax is added uncapped.
+  if (jur.taxSource === 'override') return cents(totalSellingPrice * jur.taxRate);
+  const baseRate = jur.baseTaxRate ?? jur.taxRate;
+  let tax = cents(totalSellingPrice * baseRate);
+  if (jur.taxCap != null) tax = Math.min(tax, jur.taxCap);
+  if (jur.vaBusinessRate > 0) tax = cents(tax + totalSellingPrice * jur.vaBusinessRate);
   return tax;
 }
 
@@ -226,9 +231,11 @@ export function maxVautoPriceForPayment(o) {
 
   const financed = principalForPayment(payment, apr, term);
   const outTheDoor = financed + down + equity;
-  let tsp = (outTheDoor - jur.registration + militaryRebate) / (1 + jur.taxRate);
-  if (jur.taxSource !== 'override' && jur.taxCap != null && tsp * jur.taxRate > jur.taxCap) {
-    tsp = outTheDoor - jur.registration + militaryRebate - jur.taxCap;
+  const baseRate = jur.taxSource === 'override' ? jur.taxRate : (jur.baseTaxRate ?? jur.taxRate);
+  const bizRate = jur.taxSource === 'override' ? 0 : (jur.vaBusinessRate || 0);
+  let tsp = (outTheDoor - jur.registration + militaryRebate) / (1 + baseRate + bizRate);
+  if (jur.taxSource !== 'override' && jur.taxCap != null && tsp * baseRate > jur.taxCap) {
+    tsp = (outTheDoor - jur.registration + militaryRebate - jur.taxCap) / (1 + bizRate);
   }
   const price = tsp - PROCESSING_FEE;
   // Floor to whole dollars so a vehicle at the ceiling never quotes over the goal

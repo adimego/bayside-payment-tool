@@ -16,7 +16,7 @@ This is **phase 1**. It covers the quote math, inventory search, vehicle quote p
 | --- | --- |
 | Start | vAuto price. New-vehicle prices in the feed already have manufacturer rebates taken off. Used vehicles follow the same rules. |
 | Total Selling Price (TSP) | vAuto price + **$995** processing fee (the feed leaves it out) |
-| Tax | **4.25%** of the full TSP for a Virginia ZIP or a blank ZIP, with no trade-in tax credit. For a non-Virginia ZIP, the tool uses that state's **motor-vehicle** tax rate when it differs from general retail sales tax (for example Maryland's 6.5% titling excise tax, North Carolina's 3% highway use tax). In states that add local tax to a vehicle purchase, it uses the combined state + local rate by ZIP when on file, and the breakdown shows the split (for example Tax (NY 8.875%: state 4% + local 4.875%)). If no ZIP-level rate is on file, it uses the state rate and labels it "state rate only; local tax may apply." Modeled caps (such as South Carolina's $500 infrastructure maintenance fee cap) are applied to the tax dollars. The customer can override the tax percent. |
+| Tax | **4.25%** of the full TSP for a Virginia ZIP or a blank ZIP, with no trade-in tax credit. For a non-Virginia ZIP, the tool uses that state's **motor-vehicle** tax rate when it differs from general retail sales tax (for example Maryland's 6.5% titling excise tax, North Carolina's 3% highway use tax), **plus Virginia's 0.10% local business tax**. The breakdown shows the split, for example **Tax (MD 6.60%: MD 6.50% + VA business 0.10%)**. In states that add local tax to a vehicle purchase, the out-of-state portion is the combined state + local rate by ZIP when on file (NYC is 8.875%, so the quote is 8.975%). If no ZIP-level rate is on file, it uses the state rate plus 0.10% and labels it "state rate only; local tax may apply." Modeled caps (such as South Carolina's $500 infrastructure maintenance fee cap) apply only to the out-of-state portion; the 0.10% VA business tax is added uncapped. A manual tax-percent override replaces the **total** and is not increased by 0.10%. Virginia quotes stay at **4.25%**, which already includes the business tax. |
 | Registration | **$153.50** for Virginia or a blank ZIP; **$753.50** for any out-of-state ZIP |
 | Military / First Responder | optional **−$500** on **new** vehicles only, applied **after** tax. Used vehicles are not eligible. |
 | Out-the-door (OTD) | TSP + tax + registration − $500 (if a new vehicle and the rebate is picked) |
@@ -89,8 +89,10 @@ node scripts/import-vauto.mjs path/to/report.xlsx   # .csv also works
 An optional customer ZIP on the quote page and in Find by payment sets the tax and registration:
 
 - Virginia ZIP (for example 22485) or a blank ZIP: **4.25%** tax and **$153.50** registration.
-- Any other recognized US ZIP: the state's motor-vehicle tax rate when one is on file, otherwise the combined local general sales rate for that ZIP (or the state base rate), and **$753.50** registration.
-- In states that add county or city tax to a vehicle purchase (for example New York), the quote uses the combined state + local rate for that ZIP when one is on file. The breakdown shows the split, such as **Tax (NY 8.875%: state 4% + local 4.875%)**. If no ZIP-level rate is on file, the label is **state rate only; local tax may apply** rather than a silent fallback.
+- Any other recognized US ZIP: the state's motor-vehicle tax rate when one is on file, otherwise the combined local general sales rate for that ZIP (or the state base rate), **plus Virginia's 0.10% local business tax**, and **$753.50** registration. The breakdown shows the split, for example **Tax (MD 6.60%: MD 6.50% + VA business 0.10%)**.
+- In states that add county or city tax to a vehicle purchase (for example New York), the out-of-state portion is the combined state + local rate for that ZIP when one is on file (NYC **8.875%**, quoted as **8.975%** with the VA business tax). If no ZIP-level rate is on file, the label includes **state rate only; local tax may apply** rather than a silent fallback.
+- South Carolina's **$500** cap applies only to the 5% infrastructure maintenance fee. The 0.10% VA business tax is added on the full Total Selling Price, uncapped.
+- A tax percent typed in by hand replaces the **total** and is not increased by the 0.10%.
 - Invalid input is treated like a blank ZIP (Virginia defaults). The tax percent can be typed in by hand. Typing a ZIP clears any manual tax override and fills the looked-up rate immediately.
 
 The lookup table is bundled as `data/tax-rates.json` (a 3-digit ZIP-prefix-to-state map, state base rates, ZIP-level combined rates, and a motor-vehicle rate table) so the GitHub Pages site needs no API keys.
@@ -110,16 +112,16 @@ The lookup table is bundled as `data/tax-rates.json` (a 3-digit ZIP-prefix-to-st
 | Iowa | 5.00% | Fee for new registration; sales tax does not apply. |
 | Kentucky | 6.00% | Motor vehicle usage tax; statewide. |
 | Louisiana | 5% state + local | State rate is **5%** as of January 1, 2025 (was 4.45%). Local parish and city taxes also apply. If no ZIP row is on file, the quote uses 5% and says local tax may apply. |
-| Maryland | 6.50% | Titling excise tax (general sales tax is 6%). |
+| Maryland | 6.50% + 0.10% VA business | Titling excise tax (general sales tax is 6%). Quoted as **6.60%**. |
 | Minnesota | 6.875% | Motor vehicle sales tax; local sales tax does not apply. A few cities have a separate local vehicle excise tax that is not included. |
 | Mississippi | 5.00% | Motor vehicles and light trucks 10,000 lbs or less (general rate is 7%). Heavier-truck rates are not modeled. |
-| New York | 4% state + local by ZIP | Combined rate of the owner's resident jurisdiction (Pub 718). NYC is **8.875%** (4% + 4.875%). An upstate example is Saratoga Springs **7%** (4% + 3%). ZIP-to-county is an estimate; official guidance is to look up the address, not the ZIP. |
+| New York | 4% state + local by ZIP, + 0.10% VA business | Combined rate of the owner's resident jurisdiction (Pub 718), plus VA business tax. NYC is **8.875%** (4% + 4.875%), quoted as **8.975%**. An upstate example is Saratoga Springs **7%**, quoted as **7.10%**. ZIP-to-county is an estimate; official guidance is to look up the address, not the ZIP. |
 | North Carolina | 3.00% | Highway use tax. A $2,000 cap applies only to Class A/B commercial vehicles and RVs, not typical cars, SUVs, or light trucks. |
 | North Dakota | 5.00% | Motor vehicle excise tax. |
 | New Mexico | 4.00% | Motor vehicle excise tax (not gross receipts tax). |
 | Oklahoma | 4.50% | 3.25% excise + 1.25% sales tax; no local. |
 | Pennsylvania | 6% state + local in two counties | **8%** in Philadelphia (6% + 2%) and **7%** in Allegheny County (6% + 1%); 6% elsewhere. |
-| South Carolina | 5.00%, **capped at $500** | Infrastructure maintenance fee in place of sales tax. The $500 cap is applied in the quote. |
+| South Carolina | 5.00%, **capped at $500**, + 0.10% VA business uncapped | Infrastructure maintenance fee in place of sales tax. The $500 cap applies only to the SC 5% portion; the 0.10% VA business tax is added on the full TSP. |
 | South Dakota | 4.00% | Motor vehicle excise tax (general sales tax is 4.2%). |
 | Tennessee | 7.00% state (estimate) | Local option tax applies only to the first $1,600, plus a 2.75% state single-article tax from $1,600.01 to $3,200. Those extras are not included (typically under $100). The tool no longer uses the full general combined ZIP rate, which would overstate tax on a vehicle. |
 | Texas | 6.25% | Motor vehicle sales tax; no local sales tax on vehicles. |

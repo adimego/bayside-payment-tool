@@ -2,6 +2,7 @@
 // The site is static, so all rates ship in data/tax-rates.json (no API keys).
 
 export const VA_TAX_RATE = 0.0425;
+export const VA_BUSINESS_TAX_RATE = 0.001; // 0.10% local business tax, already included in the 4.25% VA rate
 export const VA_REGISTRATION = 153.5;
 export const OUT_OF_STATE_REGISTRATION = 753.5;
 
@@ -148,8 +149,11 @@ export function applyTaxPercentToDeal(d, rawPercent) {
  * Resolve tax rate, registration, and state for a customer ZIP.
  * VA ZIPs and blank/invalid input keep the dealership's 4.25% tax and $153.50 registration.
  * Any other recognized US ZIP uses the motor-vehicle rate for that state when one is on
- * file, otherwise the ZIP or state combined general sales rate, and $753.50 registration.
- * taxOverride is a decimal rate (0.07 = 7%) and, when set, replaces the looked-up tax.
+ * file, otherwise the ZIP or state combined general sales rate, plus Virginia's 0.10%
+ * local business tax, and $753.50 registration. Virginia quotes stay at 4.25%, which
+ * already includes the business tax.
+ * taxOverride is a decimal rate (0.07 = 7%) and, when set, replaces the total tax
+ * (it is not increased by the 0.10%).
  * null/undefined is not an override (Number(null) is 0 and must not be treated as 0% tax).
  */
 export function lookupJurisdiction(zipInput, { taxOverride, taxTable } = {}) {
@@ -172,6 +176,8 @@ export function lookupJurisdiction(zipInput, { taxOverride, taxTable } = {}) {
     stateRate: override != null ? override : VA_TAX_RATE,
     localRate: 0,
     localMayApply: false,
+    baseTaxRate: override != null ? override : VA_TAX_RATE,
+    vaBusinessRate: 0,
     ...extra,
   });
 
@@ -184,13 +190,19 @@ export function lookupJurisdiction(zipInput, { taxOverride, taxTable } = {}) {
 
   const looked = data ? lookedUpRate(zip, state, data) : { taxRate: null, taxSource: 'none', vehicle: null, stateRate: null, localRate: 0, localMayApply: false };
   const extras = vehicleExtras(looked.vehicle);
-  const taxRate = override != null ? override : (looked.taxRate ?? VA_TAX_RATE);
   const taxSource = override != null ? 'override' : (looked.taxSource === 'none' ? 'state' : looked.taxSource);
+  const baseTaxRate = override != null ? override : (looked.taxRate ?? VA_TAX_RATE);
+  const vaBusinessRate = override != null ? 0 : VA_BUSINESS_TAX_RATE;
+  const taxRate = override != null
+    ? override
+    : packedToRate(rateToPacked(baseTaxRate + vaBusinessRate, data), data);
   return {
     zip,
     status: 'ok',
     state,
     taxRate,
+    baseTaxRate,
+    vaBusinessRate,
     registration: OUT_OF_STATE_REGISTRATION,
     taxSource,
     outOfState: true,
@@ -201,29 +213,42 @@ export function lookupJurisdiction(zipInput, { taxOverride, taxTable } = {}) {
   };
 }
 
-/** Compact percent for labels: 4, 8.875, 4.875, 6.5. */
+/** Compact percent for labels: 4, 6.50, 6.60, 0.10, 8.875, 8.975. */
 export function formatTaxPct(rate) {
   const p = Number(rate) * 100;
   if (!Number.isFinite(p)) return '0';
   if (Math.abs(p - Math.round(p)) < 1e-8) return String(Math.round(p));
+  const hundredths = Math.round(p * 100) / 100;
+  if (Math.abs(p - hundredths) < 1e-8) return hundredths.toFixed(2);
   return p.toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
 }
 
-/** Label for the quote breakdown, e.g. "Tax (MD 6.50%)" or "Tax (NY 8.875%: state 4% + local 4.875%)". */
+/** Label for the quote breakdown, e.g. "Tax (MD 6.60%: MD 6.50% + VA business 0.10%)". */
 export function taxLineLabel(jur) {
   const st = jur.state ? `${jur.state} ` : '';
-  if (jur.localMayApply && jur.taxSource !== 'override') {
-    return `Tax (${st}${formatTaxPct(jur.taxRate)}%, state rate only; local tax may apply)`;
+  if (jur.taxSource === 'override' || !(jur.vaBusinessRate > 0)) {
+    if (jur.localMayApply && jur.taxSource !== 'override') {
+      return `Tax (${st}${formatTaxPct(jur.taxRate)}%, state rate only; local tax may apply)`;
+    }
+    const pct = (jur.taxRate * 100).toFixed(2);
+    const est = jur.unmodeled && jur.taxSource !== 'override' ? ' est.' : '';
+    const cap = jur.taxCap != null
+      ? `, ${jur.taxCap.toLocaleString('en-US', { style: 'currency', currency: 'USD' })} cap`
+      : '';
+    return `Tax (${st}${pct}%${est}${cap})`;
   }
-  if (jur.taxSource !== 'override' && jur.localRate > 1e-8 && jur.stateRate != null) {
-    return `Tax (${st}${formatTaxPct(jur.taxRate)}%: state ${formatTaxPct(jur.stateRate)}% + local ${formatTaxPct(jur.localRate)}%)`;
-  }
-  const pct = (jur.taxRate * 100).toFixed(2);
-  const est = jur.unmodeled && jur.taxSource !== 'override' ? ' est.' : '';
+  const total = formatTaxPct(jur.taxRate);
+  const base = formatTaxPct(jur.baseTaxRate);
+  const biz = formatTaxPct(jur.vaBusinessRate);
+  const est = jur.unmodeled ? ' est.' : '';
   const cap = jur.taxCap != null
-    ? `, ${jur.taxCap.toLocaleString('en-US', { style: 'currency', currency: 'USD' })} cap`
+    ? ` capped at ${jur.taxCap.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}`
     : '';
-  return `Tax (${st}${pct}%${est}${cap})`;
+  const localNote = jur.localMayApply ? ', state rate only; local tax may apply' : '';
+  if (jur.taxCap != null) {
+    return `Tax (${st}${base}%${est}${cap} + VA business ${biz}%${localNote})`;
+  }
+  return `Tax (${st}${total}%${est}: ${jur.state} ${base}% + VA business ${biz}%${localNote})`;
 }
 
 export function zipHint(jur) {
@@ -236,17 +261,20 @@ export function zipHint(jur) {
     return `Virginia · ${pct}% tax, ${reg} registration. Leave the ZIP blank to keep these.`;
   }
   if (jur.localMayApply && jur.taxSource !== 'override') {
-    return `${jur.state} · ${formatTaxPct(jur.taxRate)}% state rate only; local tax may apply. ${reg} registration (estimate). Enter the combined rate for your locality if you know it.`;
+    const biz = jur.vaBusinessRate > 0 ? ` plus ${formatTaxPct(jur.vaBusinessRate)}% VA business tax` : '';
+    return `${jur.state} · ${formatTaxPct(jur.baseTaxRate ?? jur.taxRate)}% state rate only${biz}; local tax may apply. ${reg} registration (estimate). Enter the combined rate for your locality if you know it.`;
   }
   const how = jur.taxSource === 'override'
     ? 'rate you entered'
-    : jur.localRate > 1e-8 && jur.stateRate != null
-      ? `combined (${formatTaxPct(jur.stateRate)}% state + ${formatTaxPct(jur.localRate)}% local)`
-      : jur.taxName
-        ? jur.taxName
-        : jur.taxSource === 'zip'
-          ? 'combined local rate'
-          : 'state sales tax rate';
+    : jur.vaBusinessRate > 0
+      ? `${formatTaxPct(jur.baseTaxRate)}% out-of-state + ${formatTaxPct(jur.vaBusinessRate)}% VA business tax`
+      : jur.localRate > 1e-8 && jur.stateRate != null
+        ? `combined (${formatTaxPct(jur.stateRate)}% state + ${formatTaxPct(jur.localRate)}% local)`
+        : jur.taxName
+          ? jur.taxName
+          : jur.taxSource === 'zip'
+            ? 'combined local rate'
+            : 'state sales tax rate';
   const notes = (jur.vehicleNotes || []).filter((n) => n.modeled === false || n.kind === 'variable-rate' || jur.unmodeled).map((n) => n.text);
   const extra = notes.length ? ' ' + notes[0] : '';
   return `${jur.state} · ${pct}% ${how}, ${reg} registration (estimate).${extra}`;

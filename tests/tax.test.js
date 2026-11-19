@@ -1,7 +1,7 @@
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { setTaxTable, lookupJurisdiction, taxLineLabel, applyZipToDeal, applyTaxPercentToDeal, isTaxOverride, VA_TAX_RATE, VA_REGISTRATION, OUT_OF_STATE_REGISTRATION } from '../src/tax.js';
+import { setTaxTable, lookupJurisdiction, taxLineLabel, applyZipToDeal, applyTaxPercentToDeal, isTaxOverride, VA_TAX_RATE, VA_BUSINESS_TAX_RATE, VA_REGISTRATION, OUT_OF_STATE_REGISTRATION } from '../src/tax.js';
 import { buildQuote } from '../src/quote.js';
 
 const table = JSON.parse(readFileSync(new URL('../data/tax-rates.json', import.meta.url)));
@@ -23,22 +23,24 @@ test('VA ZIP 22485 keeps 4.25% tax and $153.50 registration', () => {
   assert.equal(q.outOfState, false);
 });
 
-test('MD ZIP 20601 uses the 6.50% vehicle titling excise tax and $753.50 registration', () => {
+test('MD ZIP 20601 uses 6.60% (6.50% titling excise + 0.10% VA business tax) and $753.50 registration', () => {
   const j = lookupJurisdiction('20601');
   assert.equal(j.status, 'ok');
   assert.equal(j.state, 'MD');
-  assert.equal(j.taxRate, 0.065);
+  assert.equal(j.baseTaxRate, 0.065);
+  assert.equal(j.vaBusinessRate, VA_BUSINESS_TAX_RATE);
+  assert.equal(j.taxRate, 0.066);
   assert.equal(j.registration, OUT_OF_STATE_REGISTRATION);
   assert.equal(j.outOfState, true);
   assert.equal(j.taxSource, 'vehicle');
   assert.equal(j.taxName, 'titling excise tax');
-  assert.equal(taxLineLabel(j), 'Tax (MD 6.50%)');
-  // TSP $40,000 × 6.5% = $2,600; OTD = 40,000 + 2,600 + 753.50
+  assert.equal(taxLineLabel(j), 'Tax (MD 6.60%: MD 6.50% + VA business 0.10%)');
+  // TSP $40,000 × 6.6% = $2,640; OTD = 40,000 + 2,640 + 753.50
   const q = buildQuote({ vautoPrice: 39005, tier: 'Good', term: 72, zip: '20601' });
-  assert.equal(q.tax, 2600);
+  assert.equal(q.tax, 2640);
   assert.equal(q.registration, 753.5);
-  assert.equal(q.outTheDoor, 43353.5);
-  assert.equal(q.taxLabel, 'Tax (MD 6.50%)');
+  assert.equal(q.outTheDoor, 43393.5);
+  assert.equal(q.taxLabel, 'Tax (MD 6.60%: MD 6.50% + VA business 0.10%)');
   assert.ok(q.disclaimers.some((t) => t.includes('Out-of-state tax and registration are estimates')));
 });
 
@@ -46,15 +48,17 @@ test('DC ZIP 20001 uses a mid-range 6.00% excise estimate and $753.50 registrati
   const j = lookupJurisdiction('20001');
   assert.equal(j.status, 'ok');
   assert.equal(j.state, 'DC');
-  assert.equal(j.taxRate, 0.06);
+  assert.equal(j.baseTaxRate, 0.06);
+  assert.equal(j.taxRate, 0.061);
+  assert.equal(j.vaBusinessRate, VA_BUSINESS_TAX_RATE);
   assert.equal(j.unmodeled, true);
   assert.equal(j.registration, OUT_OF_STATE_REGISTRATION);
-  assert.equal(taxLineLabel(j), 'Tax (DC 6.00% est.)');
+  assert.equal(taxLineLabel(j), 'Tax (DC 6.10% est.: DC 6% + VA business 0.10%)');
   const q = buildQuote({ vautoPrice: 39005, tier: 'Good', term: 72, zip: '20001-1234' });
   assert.equal(q.taxState, 'DC');
-  assert.equal(q.tax, 2400);
+  assert.equal(q.tax, 2440);
   assert.equal(q.registration, 753.5);
-  assert.equal(q.taxLabel, 'Tax (DC 6.00% est.)');
+  assert.equal(q.taxLabel, 'Tax (DC 6.10% est.: DC 6% + VA business 0.10%)');
 });
 
 test('a blank ZIP keeps Virginia tax and registration', () => {
@@ -87,6 +91,7 @@ test('the customer can override the tax rate on an out-of-state ZIP', () => {
   const j = lookupJurisdiction('20601', { taxOverride: 0.07 });
   assert.equal(j.state, 'MD');
   assert.equal(j.taxRate, 0.07);
+  assert.equal(j.vaBusinessRate, 0);
   assert.equal(j.taxSource, 'override');
   assert.equal(j.registration, OUT_OF_STATE_REGISTRATION);
   assert.equal(taxLineLabel(j), 'Tax (MD 7.00%)');
@@ -103,12 +108,13 @@ test('a null taxOverride is not treated as a 0% override', () => {
   assert.equal(isTaxOverride(0), true);
   assert.equal(isTaxOverride(0.065), true);
   const j = lookupJurisdiction('20601', { taxOverride: null });
-  assert.equal(j.taxRate, 0.065);
+  assert.equal(j.taxRate, 0.066);
+  assert.equal(j.baseTaxRate, 0.065);
   assert.equal(j.taxSource, 'vehicle');
   const d = { down: 0, tradeValue: 0, tradePayoff: 0, tier: 'Good', term: 72, military: false, zip: '20601', taxOverride: null };
   const q = buildQuote({ ...d, vautoPrice: 39005 });
-  assert.equal(q.tax, 2600);
-  assert.equal(q.taxLabel, 'Tax (MD 6.50%)');
+  assert.equal(q.tax, 2640);
+  assert.equal(q.taxLabel, 'Tax (MD 6.60%: MD 6.50% + VA business 0.10%)');
 });
 
 test('applyZipToDeal clears a prior override and fills the looked-up vehicle rate as soon as a 5-digit ZIP is set', () => {
@@ -121,7 +127,9 @@ test('applyZipToDeal clears a prior override and fills the looked-up vehicle rat
   assert.equal(d.zip, '20601');
   assert.equal(d.taxOverride, null);
   assert.equal(md.state, 'MD');
-  assert.equal(md.taxRate, 0.065);
+  assert.equal(md.taxRate, 0.066);
+  assert.equal(md.baseTaxRate, 0.065);
+  assert.equal(md.vaBusinessRate, VA_BUSINESS_TAX_RATE);
   assert.equal(md.registration, OUT_OF_STATE_REGISTRATION);
   const va = applyZipToDeal(d, '22485');
   assert.equal(va.state, 'VA');
@@ -134,93 +142,104 @@ test('applyTaxPercentToDeal sets an override only from a value typed in the tax 
   const j = applyTaxPercentToDeal(d, '7');
   assert.equal(d.taxOverride, 0.07);
   assert.equal(j.taxRate, 0.07);
+  assert.equal(j.vaBusinessRate, 0);
   assert.equal(j.taxSource, 'override');
   assert.equal(j.registration, OUT_OF_STATE_REGISTRATION);
-  applyTaxPercentToDeal(d, '');
+  const cleared = applyTaxPercentToDeal(d, '');
   assert.equal(d.taxOverride, null);
+  assert.equal(cleared.taxRate, 0.066);
 });
 
 test('NC ZIP uses the 3% highway use tax, not the general combined sales rate', () => {
   const j = lookupJurisdiction('28202');
   assert.equal(j.state, 'NC');
-  assert.equal(j.taxRate, 0.03);
+  assert.equal(j.baseTaxRate, 0.03);
+  assert.equal(j.taxRate, 0.031);
   assert.equal(j.taxSource, 'vehicle');
   assert.equal(j.taxName, 'highway use tax');
   // A $2,000 cap exists only for commercial/RV titles and is not applied here.
   assert.equal(j.taxCap, null);
   const q = buildQuote({ vautoPrice: 39005, tier: 'Good', term: 72, zip: '28202' });
-  assert.equal(q.tax, 1200); // TSP $40,000 × 3%
-  assert.equal(q.taxLabel, 'Tax (NC 3.00%)');
+  assert.equal(q.tax, 1240); // TSP $40,000 × 3.10%
+  assert.equal(q.taxLabel, 'Tax (NC 3.10%: NC 3% + VA business 0.10%)');
 });
 
-test('SC ZIP applies the 5% infrastructure maintenance fee with a $500 cap', () => {
+test('SC ZIP caps the 5% infrastructure maintenance fee at $500 and adds 0.10% VA business tax uncapped', () => {
   const j = lookupJurisdiction('29201');
   assert.equal(j.state, 'SC');
-  assert.equal(j.taxRate, 0.05);
+  assert.equal(j.baseTaxRate, 0.05);
+  assert.equal(j.vaBusinessRate, VA_BUSINESS_TAX_RATE);
+  assert.equal(j.taxRate, 0.051);
   assert.equal(j.taxCap, 500);
-  assert.equal(taxLineLabel(j), 'Tax (SC 5.00%, $500.00 cap)');
+  assert.equal(taxLineLabel(j), 'Tax (SC 5% capped at $500.00 + VA business 0.10%)');
   const q = buildQuote({ vautoPrice: 39005, tier: 'Good', term: 72, zip: '29201' });
-  assert.equal(q.tax, 500); // 5% of $40,000 would be $2,000; cap is $500
+  assert.equal(q.tax, 540); // $500 SC cap + $40,000 × 0.10%
   assert.equal(q.registration, 753.5);
-  assert.equal(q.outTheDoor, 41253.5);
-  assert.equal(q.taxLabel, 'Tax (SC 5.00%, $500.00 cap)');
+  assert.equal(q.outTheDoor, 41293.5);
+  assert.equal(q.taxLabel, 'Tax (SC 5% capped at $500.00 + VA business 0.10%)');
 });
 
-test('NYC ZIP 10001 uses 8.875% combined (4% state + 4.875% local)', () => {
+test('NYC ZIP 10001 uses 8.975% (8.875% NY combined + 0.10% VA business tax)', () => {
   const j = lookupJurisdiction('10001');
   assert.equal(j.state, 'NY');
-  assert.equal(j.taxRate, 0.08875);
+  assert.equal(j.baseTaxRate, 0.08875);
+  assert.equal(j.vaBusinessRate, VA_BUSINESS_TAX_RATE);
+  assert.equal(j.taxRate, 0.08975);
   assert.equal(j.stateRate, 0.04);
   assert.equal(j.localRate, 0.04875);
   assert.equal(j.taxSource, 'zip');
   assert.equal(j.localMayApply, false);
-  assert.equal(taxLineLabel(j), 'Tax (NY 8.875%: state 4% + local 4.875%)');
+  assert.equal(taxLineLabel(j), 'Tax (NY 8.975%: NY 8.875% + VA business 0.10%)');
   const q = buildQuote({ vautoPrice: 39005, tier: 'Good', term: 72, zip: '10001' });
-  assert.equal(q.tax, 3550); // TSP $40,000 × 8.875%
+  assert.equal(q.tax, 3590); // TSP $40,000 × 8.975%
   assert.equal(q.registration, 753.5);
-  assert.equal(q.outTheDoor, 44303.5);
-  assert.equal(q.taxLabel, 'Tax (NY 8.875%: state 4% + local 4.875%)');
+  assert.equal(q.outTheDoor, 44343.5);
+  assert.equal(q.taxLabel, 'Tax (NY 8.975%: NY 8.875% + VA business 0.10%)');
 });
 
 test('upstate NY ZIP 12866 (Saratoga Springs) uses 7% combined (4% state + 3% local)', () => {
   const j = lookupJurisdiction('12866');
   assert.equal(j.state, 'NY');
-  assert.equal(j.taxRate, 0.07);
+  assert.equal(j.baseTaxRate, 0.07);
+  assert.equal(j.taxRate, 0.071);
   assert.equal(j.stateRate, 0.04);
   assert.equal(j.localRate, 0.03);
-  assert.equal(taxLineLabel(j), 'Tax (NY 7%: state 4% + local 3%)');
+  assert.equal(taxLineLabel(j), 'Tax (NY 7.10%: NY 7% + VA business 0.10%)');
   const q = buildQuote({ vautoPrice: 39005, tier: 'Good', term: 72, zip: '12866' });
-  assert.equal(q.tax, 2800); // TSP $40,000 × 7%
+  assert.equal(q.tax, 2840); // TSP $40,000 × 7.10%
   assert.equal(q.registration, 753.5);
 });
 
 test('PA Philadelphia ZIP 19103 uses 8% (6% state + 2% local)', () => {
   const j = lookupJurisdiction('19103');
   assert.equal(j.state, 'PA');
-  assert.equal(j.taxRate, 0.08);
+  assert.equal(j.baseTaxRate, 0.08);
+  assert.equal(j.taxRate, 0.081);
   assert.equal(j.stateRate, 0.06);
   assert.equal(j.localRate, 0.02);
-  assert.equal(taxLineLabel(j), 'Tax (PA 8%: state 6% + local 2%)');
+  assert.equal(taxLineLabel(j), 'Tax (PA 8.10%: PA 8% + VA business 0.10%)');
   const q = buildQuote({ vautoPrice: 39005, tier: 'Good', term: 72, zip: '19103' });
-  assert.equal(q.tax, 3200);
+  assert.equal(q.tax, 3240);
   assert.equal(q.registration, 753.5);
 });
 
 test('OH ZIP 44113 uses a combined state + local rate and labels the split', () => {
   const j = lookupJurisdiction('44113');
   assert.equal(j.state, 'OH');
-  assert.equal(j.taxRate, 0.08);
+  assert.equal(j.baseTaxRate, 0.08);
+  assert.equal(j.taxRate, 0.081);
   assert.equal(j.stateRate, 0.0575);
   assert.equal(j.localRate, 0.0225);
   assert.equal(j.taxSource, 'zip');
-  assert.equal(taxLineLabel(j), 'Tax (OH 8%: state 5.75% + local 2.25%)');
+  assert.equal(taxLineLabel(j), 'Tax (OH 8.10%: OH 8% + VA business 0.10%)');
 });
 
 test('a local-tax state without a ZIP row falls back to the state rate with an explicit label', () => {
   const j = lookupJurisdiction('90001'); // CA, no ZIP-level row in the bundled table
   assert.equal(j.state, 'CA');
-  assert.equal(j.taxRate, 0.0725);
+  assert.equal(j.baseTaxRate, 0.0725);
+  assert.equal(j.taxRate, 0.0735);
   assert.equal(j.localMayApply, true);
-  assert.equal(taxLineLabel(j), 'Tax (CA 7.25%, state rate only; local tax may apply)');
+  assert.equal(taxLineLabel(j), 'Tax (CA 7.35%: CA 7.25% + VA business 0.10%, state rate only; local tax may apply)');
 });
 
