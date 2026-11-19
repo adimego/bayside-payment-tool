@@ -5,16 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Payment Calculator | Bayside Chrysler Dodge Jeep Ram</title>
   <meta name="description" content="Out-the-door prices and monthly payments on in-stock vehicles at Bayside Chrysler Dodge Jeep Ram, King George, VA.">
-  <meta name="theme-color" content="#0b2545">
-  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#bc2028">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" href="assets/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="apple-mobile-web-app-title" content="Bayside Payments">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <link rel="stylesheet" href="styles.css">
   <script type="module" src="src/app.js"></script>
 </head>
 <body>
   <header class="site-header">
-    <a class="brand" href="#/">
-      <span class="brand-name">Bayside</span>
-      <span class="brand-sub">Chrysler Dodge Jeep Ram</span>
+    <a class="brand" href="#/" aria-label="Bayside Chrysler Dodge Jeep Ram, home">
+      <img src="assets/bayside-wordmark@2x.png" width="129" height="56" alt="Bayside">
+      <span class="brand-sub">Chrysler Dodge Jeep Ram<br>King George, VA</span>
     </a>
     <a class="call" href="tel:+15407752277">(540) 775-2277</a>
   </header>
@@ -24,6 +30,7 @@
   </nav>
   <main id="app" tabindex="-1"><p class="loading">Loading inventory…</p></main>
   <footer class="site-footer">
+    <img class="footer-logo" src="assets/bayside-logo-trimmed.png" width="615" height="385" alt="Bayside Chrysler Dodge Jeep Ram, King George, VA" loading="lazy">
     <p><strong>Bayside Chrysler Dodge Jeep Ram</strong> · 16045 James Madison Pkwy, King George, VA 22485 · <a href="tel:+15407752277">(540) 775-2277</a></p>
     <p class="fine">Estimates only. Rates are subject to credit approval. Taxes may vary on rebate amounts. Prices include the $995 processing fee; tax is 4.25% and registration is $153.50. All vehicles subject to prior sale. <a href="https://www.baysidecdjrva.com/" rel="noopener">baysidecdjrva.com</a></p>
     <p class="fine" id="inv-date"></p>
