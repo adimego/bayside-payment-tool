@@ -1,6 +1,6 @@
 // Bayside payment tool UI (phase 1: static, reads data/inventory.json).
 import { buildQuote, TIERS, TERMS, LINKS, DISCLAIMERS, PROCESSING_FEE, REGISTRATION, TAX_RATE, MILITARY_REBATE, isUsedVehicle, maxTermForYear, clampTerm, termCapNote } from './quote.js';
-import { setTaxTable, lookupJurisdiction, zipHint, applyZipToDeal, applyTaxPercentToDeal } from './tax.js';
+import { setTaxTable, lookupJurisdiction, zipHint, applyZipToDeal, applyTaxPercentToDeal, formatTaxInputPct } from './tax.js';
 import { websiteUrl, similarVehicles, findByPaymentGoal, searchInventory } from './inventory.js';
 import { VEHICLE_TYPES } from './vauto-parse.js';
 import { rankSuggestions } from './ai-hook.js';
@@ -60,7 +60,7 @@ function dealFormHtml(d, { idPrefix = 'd', allowMilitary = true, year = null, ca
     <div><label for="${idPrefix}-trade">Trade-in value</label><input id="${idPrefix}-trade" name="tradeValue" inputmode="decimal" value="${d.tradeValue || ''}" placeholder="$0"></div>
     <div><label for="${idPrefix}-payoff">Trade loan payoff</label><input id="${idPrefix}-payoff" name="tradePayoff" inputmode="decimal" value="${d.tradePayoff || ''}" placeholder="$0"></div>
     <div><label for="${idPrefix}-zip">Customer ZIP (optional)</label><input id="${idPrefix}-zip" name="zip" inputmode="numeric" maxlength="10" value="${esc(d.zip || '')}" placeholder="e.g. 22485" autocomplete="postal-code"></div>
-    <div><label for="${idPrefix}-tax">Tax rate (%)</label><input id="${idPrefix}-tax" name="taxPercent" inputmode="decimal" value="${(jurFor(d).taxRate * 100).toFixed(2)}"></div>
+    <div><label for="${idPrefix}-tax">Tax rate (%)</label><input id="${idPrefix}-tax" name="taxPercent" inputmode="decimal" value="${formatTaxInputPct(jurFor(d).taxRate)}"></div>
     <div class="wide"><p class="hint zip-hint" id="${idPrefix}-zip-hint">${esc(zipHint(jurFor(d)))}</p></div>
     <div class="wide"><label>Term</label><div class="seg" role="group" aria-label="Term">${TERMS.map((t) => `<button type="button" data-term="${t}" aria-pressed="${t === selected}" ${t > maxTerm ? 'disabled' : ''}>${t} mo</button>`).join('')}</div>${note ? `<p class="hint term-note">${esc(note)}</p>` : ''}</div>
     <div class="wide" id="${idPrefix}-military-row" ${allowMilitary ? '' : 'hidden'}><label class="check"><input type="checkbox" name="military" ${d.military ? 'checked' : ''}> Military or First Responder ($${MILITARY_REBATE} rebate)</label></div>
@@ -72,7 +72,7 @@ function fillTaxFromZip(root, d) {
   const taxInput = root.querySelector('input[name="taxPercent"]');
   const hint = root.querySelector('.zip-hint');
   const jur = jurFor(d);
-  if (taxInput && d.taxOverride == null) taxInput.value = (jur.taxRate * 100).toFixed(2);
+  if (taxInput && d.taxOverride == null) taxInput.value = formatTaxInputPct(jur.taxRate);
   if (hint) hint.textContent = zipHint(jur);
 }
 

@@ -134,14 +134,28 @@ export function applyZipToDeal(d, zipValue) {
 /**
  * Apply a value typed into the tax % field. This is the only way a deal
  * gets a taxOverride — pre-filled looked-up rates must not count as one.
+ * If the entered percent is the same as the looked-up total (after rounding
+ * to four decimal places), leave the override cleared so the display value
+ * cannot change the computed rate or drop the 0.10% / trade-credit split.
  */
 export function applyTaxPercentToDeal(d, rawPercent) {
   const raw = String(rawPercent ?? '').trim();
-  if (raw === '') d.taxOverride = null;
-  else {
-    const p = parseFloat(raw);
-    d.taxOverride = Number.isFinite(p) ? p / 100 : null;
+  if (raw === '') {
+    d.taxOverride = null;
+    return lookupJurisdiction(d.zip);
   }
+  const p = parseFloat(raw);
+  if (!Number.isFinite(p)) {
+    d.taxOverride = null;
+    return lookupJurisdiction(d.zip);
+  }
+  const entered = p / 100;
+  const looked = lookupJurisdiction(d.zip);
+  if (Math.round(entered * 1e6) === Math.round(looked.taxRate * 1e6)) {
+    d.taxOverride = null;
+    return looked;
+  }
+  d.taxOverride = entered;
   return lookupJurisdiction(d.zip, { taxOverride: d.taxOverride });
 }
 
@@ -271,14 +285,24 @@ export function taxableAmountLabel(jur, { taxable, credit, rule } = {}) {
   return `Taxable amount ${formatMoney(taxable)} (trade credit applied)`;
 }
 
-/** Compact percent for labels: 4, 6.50, 6.60, 0.10, 8.875, 8.975. */
+/** Percent rounded to four decimal places: 8.975, not 8.974999… */
+export function roundedTaxPercent(rate) {
+  return Math.round(Number(rate) * 1e6) / 1e4;
+}
+
+/** Compact percent for labels and the tax field: 4, 6.50, 6.60, 0.10, 8.875, 8.975. */
 export function formatTaxPct(rate) {
-  const p = Number(rate) * 100;
+  const p = roundedTaxPercent(rate);
   if (!Number.isFinite(p)) return '0';
   if (Math.abs(p - Math.round(p)) < 1e-8) return String(Math.round(p));
   const hundredths = Math.round(p * 100) / 100;
   if (Math.abs(p - hundredths) < 1e-8) return hundredths.toFixed(2);
-  return p.toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
+  return p.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
+}
+
+/** Tax % field value: same rounding and trailing-zero rules as the breakdown labels. */
+export function formatTaxInputPct(rate) {
+  return formatTaxPct(rate);
 }
 
 /** Label for the quote breakdown, e.g. "Tax (MD 6.60%: MD 6.50% + VA business 0.10%)". */

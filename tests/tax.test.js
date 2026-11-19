@@ -1,7 +1,7 @@
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { setTaxTable, lookupJurisdiction, taxLineLabel, applyZipToDeal, applyTaxPercentToDeal, isTaxOverride, VA_TAX_RATE, VA_BUSINESS_TAX_RATE, VA_REGISTRATION, OUT_OF_STATE_REGISTRATION } from '../src/tax.js';
+import { setTaxTable, lookupJurisdiction, taxLineLabel, applyZipToDeal, applyTaxPercentToDeal, isTaxOverride, formatTaxInputPct, formatTaxPct, VA_TAX_RATE, VA_BUSINESS_TAX_RATE, VA_REGISTRATION, OUT_OF_STATE_REGISTRATION } from '../src/tax.js';
 import { buildQuote, maxVautoPriceForPayment } from '../src/quote.js';
 
 const table = JSON.parse(readFileSync(new URL('../data/tax-rates.json', import.meta.url)));
@@ -349,4 +349,31 @@ test('Find-by-payment inversion still fits the goal when a trade credit reduces 
   const over = buildQuote({ ...goal, vautoPrice: maxP + 2 });
   assert.ok(fit.payment <= 700, `fit payment ${fit.payment} should be <= 700`);
   assert.ok(over.payment > 700, `over payment ${over.payment} should be > 700`);
+});
+
+test('the tax percent field shows 8.975 and 6.60 and does not create a false override', () => {
+  const ny = lookupJurisdiction('10001');
+  assert.equal(formatTaxInputPct(ny.taxRate), '8.975');
+  assert.equal(formatTaxPct(ny.taxRate), '8.975');
+  // The old toFixed(2) rounding is what showed 8.97 on the live field.
+  assert.equal((ny.taxRate * 100).toFixed(2), '8.97');
+
+  const md = lookupJurisdiction('20601');
+  assert.equal(formatTaxInputPct(md.taxRate), '6.60');
+  assert.equal(formatTaxPct(md.taxRate), '6.60');
+
+  const d = { zip: '10001', taxOverride: null };
+  applyZipToDeal(d, '10001');
+  // Re-applying the displayed field value (as a spurious input event might)
+  // must not set an override or change the computed rate.
+  const shown = formatTaxInputPct(lookupJurisdiction(d.zip).taxRate);
+  const after = applyTaxPercentToDeal(d, shown);
+  assert.equal(shown, '8.975');
+  assert.equal(d.taxOverride, null);
+  assert.notEqual(after.taxSource, 'override');
+  assert.equal(after.taxRate, 0.08975);
+  assert.equal(after.vaBusinessRate, VA_BUSINESS_TAX_RATE);
+  const q = buildQuote({ vautoPrice: 39005, tier: 'Good', term: 72, zip: '10001', taxOverride: d.taxOverride });
+  assert.equal(q.tax, 3590);
+  assert.equal(q.taxLabel, 'Tax (NY 8.975%: NY 8.875% + VA business 0.10%)');
 });
