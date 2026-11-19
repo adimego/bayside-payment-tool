@@ -12,7 +12,7 @@ const app = document.getElementById('app');
 let inventory = [];
 
 // ---------- helpers ----------
-const money = (n) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+const money = (n) => (Number.isFinite(Number(n)) ? Number(n) : 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 const money0 = (n) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const num = (v) => { const n = parseFloat(String(v).replace(/[^0-9.]/g, '')); return Number.isFinite(n) ? n : 0; };
@@ -182,7 +182,7 @@ function breakdownHtml(q) {
   const eq = q.tradeEquity;
   return `
   <div class="big-pay"><div class="amt">${money(q.payment)}<span class="per">/mo</span></div>
-    <div class="sub">${q.term} months at ${q.apr.toFixed(1)}% APR (${esc(q.tier)} credit)</div></div>
+    <div class="sub">${q.term} months at ${(Number(q.apr) || 0).toFixed(1)}% APR (${esc(q.tier || '')} credit)</div></div>
   <table class="breakdown">
     <tr><td>Total Selling Price <span class="hint">(incl. $${PROCESSING_FEE} processing fee)</span></td><td>${money(q.totalSellingPrice)}</td></tr>
     <tr class="plus"><td>${esc(q.taxLabel || ('Tax (' + (q.taxRate * 100).toFixed(2) + '%)'))}${q.taxableLabel ? `<span class="hint">${esc(q.taxableLabel)}</span>` : ''}</td><td>+${money(q.tax)}</td></tr>

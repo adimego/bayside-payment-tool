@@ -341,13 +341,19 @@ export function bindSaveQuote(root, { vehicle, deal, results, getResults }) {
 
 export async function renderSharedQuote(app, slug, { breakdownFromSaved }) {
   app.innerHTML = '<p class="loading">Loading quote…</p>';
-  const { data, error } = await getSharedQuote(slug);
+  let data, error;
+  try {
+    ({ data, error } = await getSharedQuote(slug));
+  } catch (err) {
+    error = err;
+  }
   if (error || !data) {
     app.innerHTML = `
       <a class="back" href="#/">← All vehicles</a>
       <div class="card"><h1>Quote not found</h1><p>This link may be expired or incorrect. Call <a href="tel:+15407752277">(540) 775-2277</a>.</p></div>`;
     return;
   }
+  try {
   const first = data.customer_first_name || customerFirstName(data.vehicle?.name) || 'Customer';
   const v = data.vehicle || {};
   const title = v.name || [v.year, v.make, v.model, v.trim].filter(Boolean).join(' ') || 'Saved quote';
@@ -371,6 +377,12 @@ export async function renderSharedQuote(app, slug, { breakdownFromSaved }) {
         </div>
       </aside>
     </div>`;
+  } catch (err) {
+    console.error(err);
+    app.innerHTML = `
+      <a class="back" href="#/">← All vehicles</a>
+      <div class="card"><h1>Quote not found</h1><p>This link may be expired or incorrect. Call <a href="tel:+15407752277">(540) 775-2277</a>.</p></div>`;
+  }
 }
 
 export async function renderAdmin(app) {
