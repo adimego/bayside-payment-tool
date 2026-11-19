@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildQuote, aprFor, monthlyPayment, maxVautoPriceForPayment, TIERS, TERMS } from '../src/quote.js';
+import { buildQuote, aprFor, monthlyPayment, maxVautoPriceForPayment, TIERS, TERMS, CURRENT_MODEL_YEAR, maxTermForYear, vehicleAge, clampTerm, yearFromVehicleName } from '../src/quote.js';
 
 // Hand-checked: $39,005 vAuto, Good credit, 72 months, $3,000 down.
 //   TSP      = 39,005 + 995           = 40,000.00
@@ -88,7 +88,7 @@ test('no price means no quote (Call for Price)', () => {
   assert.equal(buildQuote({ vautoPrice: 0 }), null);
 });
 
-test('APR table: base at 36 mo, +0.5 per extra 12 months', () => {
+test('APR table for used / pre-owned: base at 36 mo, +0.5 per extra 12 months', () => {
   const expected = { Poor: [20, 20.5, 21, 21.5, 22], Fair: [16, 16.5, 17, 17.5, 18], Good: [10, 10.5, 11, 11.5, 12], Great: [8, 8.5, 9, 9.5, 10], Excellent: [6, 6.5, 7, 7.5, 8] };
   for (const t of TIERS) assert.deepEqual(TERMS.map((n) => aprFor(t.id, n)), expected[t.id]);
   assert.throws(() => aprFor('Good', 66));
@@ -113,4 +113,59 @@ test('payment goal inverse: max price fits the goal and $2 more does not', () =>
   }
   // Worked example: $750/mo, Good, 72 mo, $3,000 down -> $39,028 vAuto ceiling
   assert.equal(maxVautoPriceForPayment({ payment: 750, down: 3000, tier: 'Good', term: 72 }), 39028);
+});
+
+test('new vehicles are 0.5 points below the used APR at every term', () => {
+  const used = { Poor: [20, 20.5, 21, 21.5, 22], Fair: [16, 16.5, 17, 17.5, 18], Good: [10, 10.5, 11, 11.5, 12], Great: [8, 8.5, 9, 9.5, 10], Excellent: [6, 6.5, 7, 7.5, 8] };
+  const neu = { Poor: [19.5, 20, 20.5, 21, 21.5], Fair: [15.5, 16, 16.5, 17, 17.5], Good: [9.5, 10, 10.5, 11, 11.5], Great: [7.5, 8, 8.5, 9, 9.5], Excellent: [5.5, 6, 6.5, 7, 7.5] };
+  for (const t of TIERS) {
+    assert.deepEqual(TERMS.map((n) => aprFor(t.id, n, 'Used')), used[t.id]);
+    assert.deepEqual(TERMS.map((n) => aprFor(t.id, n, 'New')), neu[t.id]);
+    assert.deepEqual(TERMS.map((n) => aprFor(t.id, n, 'N')), neu[t.id]);
+  }
+  assert.equal(aprFor('Good', 72), 11.5); // omitted condition uses the used table
+  assert.equal(aprFor('Good', 72, 'New'), 11);
+});
+
+test('term caps by vehicle age against model year 2026', () => {
+  assert.equal(CURRENT_MODEL_YEAR, 2026);
+  // 2021 = age 5, no cap; 2020 = age 6, cap 72; 2017 = age 9, cap 72; 2016 = age 10, cap 60
+  assert.equal(vehicleAge(2021), 5);
+  assert.equal(vehicleAge(2020), 6);
+  assert.equal(vehicleAge(2017), 9);
+  assert.equal(vehicleAge(2016), 10);
+  assert.equal(maxTermForYear(2021), 84);
+  assert.equal(maxTermForYear(2020), 72);
+  assert.equal(maxTermForYear(2017), 72);
+  assert.equal(maxTermForYear(2016), 60);
+  assert.equal(maxTermForYear(2014), 60);
+  assert.equal(maxTermForYear(2026), 84);
+  assert.equal(maxTermForYear(2027), 84);
+  assert.equal(clampTerm(84, 2021), 84);
+  assert.equal(clampTerm(84, 2020), 72);
+  assert.equal(clampTerm(84, 2016), 60);
+  assert.equal(clampTerm(48, 2016), 48); // already under the cap
+  assert.equal(yearFromVehicleName('2016 Jeep Wrangler Unlimited Sahara'), 2016);
+  assert.equal(yearFromVehicleName('2027 Dodge Charger R/T Plus'), 2027);
+});
+
+test('buildQuote auto-selects the max term when the request exceeds the cap', () => {
+  const q = buildQuote({ vautoPrice: 18005, tier: 'Good', term: 84, condition: 'Used', year: 2014 });
+  assert.equal(q.term, 60);
+  assert.equal(q.maxTerm, 60);
+  assert.equal(q.apr, 11); // used Good at 60 months
+  const fromName = buildQuote({ vautoPrice: 18005, tier: 'Good', term: 84, condition: 'Used', name: '2014 Ram 1500 Express' });
+  assert.equal(fromName.term, 60);
+  assert.equal(fromName.apr, q.apr);
+  assert.equal(fromName.payment, q.payment);
+});
+
+test('buildQuote uses the lower new APR and does not cap a current-year vehicle', () => {
+  const q = buildQuote({ vautoPrice: 24755, tier: 'Good', term: 84, condition: 'New', year: 2026 });
+  assert.equal(q.term, 84);
+  assert.equal(q.maxTerm, 84);
+  assert.equal(q.apr, 11.5); // new Good 9.5 + 2.0
+  const usedSame = buildQuote({ vautoPrice: 24755, tier: 'Good', term: 84, condition: 'Used', year: 2026 });
+  assert.equal(usedSame.apr, 12);
+  assert.ok(q.payment < usedSame.payment);
 });

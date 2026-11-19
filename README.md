@@ -24,7 +24,9 @@ This is **phase 1**. It covers the quote math, inventory search, vehicle quote p
 | Amount financed | OTD − down payment − trade equity, never below $0 |
 | Payment | standard amortization: `P = A·r / (1 − (1 + r)^−n)`, where r = APR/12 |
 
-**APR by credit tier.** The 36-month rate is the base, plus 0.5% for every extra 12 months.
+**APR by credit tier.** The table below is the 36-month rate for **used / pre-owned** vehicles, plus 0.5% for every extra 12 months. **New** vehicles are 0.5 percentage points lower at every term (9.5% Good at 36 months, 11.0% at 72 months, and so on). The rate reference is the `TIERS` table in `src/quote.js`.
+
+Used / pre-owned:
 
 | Credit | 36 | 48 | 60 | 72 | 84 |
 | --- | --- | --- | --- | --- | --- |
@@ -34,8 +36,28 @@ This is **phase 1**. It covers the quote math, inventory search, vehicle quote p
 | Great | 8.0% | 8.5% | 9.0% | 9.5% | 10.0% |
 | Excellent | 6.0% | 6.5% | 7.0% | 7.5% | 8.0% |
 
-**Worked example**, checked by hand and covered in `tests/quote.test.js`: a $39,005 vAuto price with Good credit, 72 months and $3,000 down.
-TSP $40,000.00 → tax $1,700.00 → registration $153.50 → OTD $41,853.50 → financed $38,853.50 → 11.5% APR → **$749.53/mo**.
+New:
+
+| Credit | 36 | 48 | 60 | 72 | 84 |
+| --- | --- | --- | --- | --- | --- |
+| Poor | 19.5% | 20.0% | 20.5% | 21.0% | 21.5% |
+| Fair | 15.5% | 16.0% | 16.5% | 17.0% | 17.5% |
+| Good | 9.5% | 10.0% | 10.5% | 11.0% | 11.5% |
+| Great | 7.5% | 8.0% | 8.5% | 9.0% | 9.5% |
+| Excellent | 5.5% | 6.0% | 6.5% | 7.0% | 7.5% |
+
+**Term caps by vehicle age.** Age is the current model year minus the vehicle's model year (the year at the start of the Vehicle string). The current model year is the constant `CURRENT_MODEL_YEAR = 2026` in `src/quote.js`, not derived from the calendar (a September model-year rollover would already be 2027 in November 2026 and would shift these boundaries).
+
+| Model year | Age in 2026 | Max term |
+| --- | --- | --- |
+| 2021 and newer | 5 or less | 84 months (no cap) |
+| 2017–2020 | 6 to 9 | 72 months |
+| 2016 and older | 10 or more | 60 months |
+
+If the selected term is longer than the cap, the tool auto-selects the maximum and disables the longer term buttons, with a short note such as "Max term for 2016 and older: 60 months." Inventory card estimates and Find by payment use each vehicle's own cap and new/used rate.
+
+**Worked example**, checked by hand and covered in `tests/quote.test.js`: a $39,005 vAuto price on a **used** vehicle with Good credit, 72 months and $3,000 down.
+TSP $40,000.00 → tax $1,700.00 → registration $153.50 → OTD $41,853.50 → financed $38,853.50 → 11.5% APR → **$749.53/mo**. The same deal on a new vehicle would use 11.0% APR.
 
 Every quote shows: *Rates are subject to credit approval. Taxes may vary on rebate amounts.*
 Every quote also has [Apply for Financing](https://www.baysidecdjrva.com/apply-for-financing.htm) and

@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { readXlsxRows } from '../scripts/lib/xlsx.mjs';
 import { normalizeVautoRows, parseVehicleName, vehicleTypeFromBody, parseCsv } from '../src/vauto-parse.js';
 import { websiteUrl, similarVehicles, findByPaymentGoal, searchInventory } from '../src/inventory.js';
+import { maxVautoPriceForPayment } from '../src/quote.js';
 
 const rows = readXlsxRows(readFileSync(new URL('./fixtures/vauto-sample.xlsx', import.meta.url)));
 const { vehicles, warnings } = normalizeVautoRows(rows);
@@ -80,4 +81,22 @@ test('search filters by text, type and condition', () => {
   const r = searchInventory(vehicles, { text: 'wrangler', type: 'SUV', condition: 'New' });
   assert.ok(r.length > 0);
   assert.ok(r.every((v) => /wrangler/i.test(v.name) && v.condition === 'New'));
+});
+
+test('findByPaymentGoal uses each vehicle\'s own cap and new/used rate', () => {
+  const goal = { payment: 400, down: 0, tier: 'Good', term: 84, military: false, type: 'SUV' };
+  const max84used = maxVautoPriceForPayment({ ...goal, condition: 'Used' });
+  const max60used = maxVautoPriceForPayment({ ...goal, condition: 'Used', year: 2016 });
+  assert.ok(max84used > max60used);
+  const mid = Math.floor((max84used + max60used) / 2);
+  const list = [
+    { stock: 'OLD', name: '2016 Jeep Test', year: 2016, price: mid, condition: 'Used', type: 'SUV' },
+    { stock: 'NEW', name: '2026 Jeep Test', year: 2026, price: mid, condition: 'New', type: 'SUV' },
+  ];
+  const { matches } = findByPaymentGoal(list, goal);
+  assert.equal(matches.some((m) => m.vehicle.stock === 'OLD'), false);
+  const neu = matches.find((m) => m.vehicle.stock === 'NEW');
+  assert.ok(neu);
+  assert.equal(neu.quote.term, 84);
+  assert.equal(neu.quote.apr, 11.5);
 });

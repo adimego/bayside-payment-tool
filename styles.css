@@ -57,6 +57,8 @@ input:focus, select:focus { outline: 2px solid var(--red); outline-offset: 1px; 
 .seg { display: flex; flex-wrap: wrap; gap: .4rem; }
 .seg button { flex: 1 1 0; min-width: 0; white-space: nowrap; font: inherit; padding: .55rem .25rem; border: 1px solid var(--line); background: #fff; border-radius: 999px; cursor: pointer; font-weight: 600; color: var(--muted); }
 .seg button[aria-pressed="true"] { background: var(--black); color: #fff; border-color: var(--black); }
+.seg button:disabled { opacity: .38; cursor: not-allowed; background: var(--bg); color: var(--muted); border-color: var(--line); }
+.term-note { margin: .45rem 0 0; }
 
 .count { color: var(--muted); font-size: .9rem; margin: .25rem 0 .75rem; }
 .grid { display: grid; gap: .8rem; grid-template-columns: 1fr; }

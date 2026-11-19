@@ -15,8 +15,16 @@ export const TIERS = [
   { id: 'Great', base: 8 },
   { id: 'Excellent', base: 6 },
 ];
-// Each extra 12 months beyond 36 adds this many APR points.
+// The TIERS table is the 36-month APR for USED / pre-owned vehicles.
+// NEW vehicles are this many percentage points lower at every term.
+export const NEW_RATE_DISCOUNT = 0.5;
+// Each extra 12 months beyond 36 adds this many APR points (new and used).
 export const RATE_STEP_PER_12_MONTHS = 0.5;
+// Dealership model-year reference for age and term caps. A constant of 2026
+// (not derived from the calendar). Deriving with "calendar year + 1 from
+// September" would be 2027 in November 2026 and would shift the stated
+// boundaries (2021 = no cap, 2020 = 72, 2016 = 60).
+export const CURRENT_MODEL_YEAR = 2026;
 
 export const DISCLAIMERS = [
   'Rates are subject to credit approval.',
@@ -33,12 +41,61 @@ export function cents(n) {
   return Math.round((n + Number.EPSILON) * 100) / 100;
 }
 
-/** APR (percent, e.g. 11.5) for a credit tier and term in months. */
-export function aprFor(tier, term) {
+/** True when the vehicle is new. Accepts "New", "N", or "n". */
+export function isNewVehicle(condition) {
+  const c = String(condition ?? '').trim().toLowerCase();
+  return c === 'new' || c === 'n';
+}
+
+/** Four-digit model year at the start of a Vehicle string, or null. */
+export function yearFromVehicleName(name) {
+  const m = String(name ?? '').trim().match(/^(\d{4})\b/);
+  return m ? Number(m[1]) : null;
+}
+
+/** Age in model years: CURRENT_MODEL_YEAR minus the vehicle's model year. */
+export function vehicleAge(year, referenceYear = CURRENT_MODEL_YEAR) {
+  const y = Number(year);
+  if (!Number.isFinite(y) || y <= 0) return 0;
+  return referenceYear - y;
+}
+
+/**
+ * Longest allowed term in months.
+ * Age > 5 (2020 and older) caps at 72; age >= 10 (2016 and older) caps at 60.
+ * Unknown year: no cap (84).
+ */
+export function maxTermForYear(year, referenceYear = CURRENT_MODEL_YEAR) {
+  if (year == null || year === '' || !Number.isFinite(Number(year))) return 84;
+  const age = vehicleAge(year, referenceYear);
+  if (age >= 10) return 60;
+  if (age > 5) return 72;
+  return 84;
+}
+
+/** Snap a requested term down to the vehicle's cap; returns a value in TERMS. */
+export function clampTerm(term, year, referenceYear = CURRENT_MODEL_YEAR) {
+  const max = maxTermForYear(year, referenceYear);
+  const t = Number(term);
+  if (TERMS.includes(t) && t <= max) return t;
+  return [...TERMS].reverse().find((n) => n <= max);
+}
+
+/** Short UI note when a term cap applies, or an empty string. */
+export function termCapNote(year, referenceYear = CURRENT_MODEL_YEAR) {
+  const max = maxTermForYear(year, referenceYear);
+  if (max === 60) return `Max term for ${referenceYear - 10} and older: 60 months`;
+  if (max === 72) return `Max term for ${referenceYear - 6} and older: 72 months`;
+  return '';
+}
+
+/** APR (percent, e.g. 11.5) for a credit tier, term, and new/used condition. */
+export function aprFor(tier, term, condition) {
   const t = TIERS.find((x) => x.id.toLowerCase() === String(tier).toLowerCase());
   if (!t) throw new Error(`Unknown credit tier: ${tier}`);
   if (!TERMS.includes(Number(term))) throw new Error(`Unsupported term: ${term}`);
-  return t.base + ((Number(term) - 36) / 12) * RATE_STEP_PER_12_MONTHS;
+  const base = isNewVehicle(condition) ? t.base - NEW_RATE_DISCOUNT : t.base;
+  return base + ((Number(term) - 36) / 12) * RATE_STEP_PER_12_MONTHS;
 }
 
 /** Standard amortized monthly payment. apr is a percent (11.5 = 11.5%). */
@@ -80,6 +137,9 @@ export function isUsedVehicle(condition) {
  * @param {boolean} [o.military=false]
  * @param {string} [o.condition]  "New"/"N" or "Used"/"U". The $500 Military / First Responder
  *   rebate applies only to new vehicles; it is ignored when the vehicle is used.
+ *   New vehicles also get a 0.5 point lower APR than used.
+ * @param {number} [o.year]  model year; used to cap the term. Falls back to o.name.
+ * @param {string} [o.name]  vehicle string, used only to parse a year if o.year is missing.
  */
 export function buildQuote(o) {
   if (o == null || o.vautoPrice == null || !Number.isFinite(Number(o.vautoPrice)) || Number(o.vautoPrice) <= 0) {
@@ -90,7 +150,9 @@ export function buildQuote(o) {
   const tradeValue = Math.max(0, num(o.tradeValue));
   const tradePayoff = Math.max(0, num(o.tradePayoff));
   const tier = o.tier ?? 'Good';
-  const term = Number(o.term ?? 72);
+  const year = o.year ?? yearFromVehicleName(o.name ?? o.vehicle);
+  const maxTerm = maxTermForYear(year);
+  const term = clampTerm(o.term ?? 72, year);
   const military = Boolean(o.military);
 
   const totalSellingPrice = cents(vautoPrice + PROCESSING_FEE);
@@ -99,7 +161,7 @@ export function buildQuote(o) {
   const outTheDoor = cents(totalSellingPrice + tax + REGISTRATION - militaryRebate);
   const tradeEquity = cents(tradeValue - tradePayoff); // negative = owes more than it's worth
   const amountFinanced = Math.max(0, cents(outTheDoor - down - tradeEquity));
-  const apr = aprFor(tier, term);
+  const apr = aprFor(tier, term, o.condition);
   const payment = monthlyPayment(amountFinanced, apr, term);
 
   return {
@@ -118,6 +180,8 @@ export function buildQuote(o) {
     amountFinanced,
     tier,
     term,
+    year: year ?? null,
+    maxTerm,
     apr,
     payment,
     disclaimers: DISCLAIMERS,
@@ -131,8 +195,9 @@ export function buildQuote(o) {
 export function maxVautoPriceForPayment(o) {
   const payment = num(o.payment);
   const tier = o.tier ?? 'Good';
-  const term = Number(o.term ?? 72);
-  const apr = aprFor(tier, term);
+  const year = o.year ?? yearFromVehicleName(o.name ?? o.vehicle);
+  const term = clampTerm(o.term ?? 72, year);
+  const apr = aprFor(tier, term, o.condition);
   const down = Math.max(0, num(o.down));
   const equity = Math.max(0, num(o.tradeValue)) - Math.max(0, num(o.tradePayoff));
   const militaryRebate = o.military && !isUsedVehicle(o.condition) ? MILITARY_REBATE : 0;
@@ -147,6 +212,6 @@ export function maxVautoPriceForPayment(o) {
 }
 
 /** Rate table rows for display: [{tier, rates:[{term, apr}]}]. */
-export function rateTable() {
-  return TIERS.map((t) => ({ tier: t.id, rates: TERMS.map((term) => ({ term, apr: aprFor(t.id, term) })) }));
+export function rateTable(condition) {
+  return TIERS.map((t) => ({ tier: t.id, rates: TERMS.map((term) => ({ term, apr: aprFor(t.id, term, condition) })) }));
 }

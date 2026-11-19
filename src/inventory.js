@@ -48,13 +48,18 @@ export function similarVehicles(vehicle, inventory, { band = 0.15, limit = 6 } =
  * @returns {{maxPrice:number, matches:Array<{vehicle, quote, gap}>}}
  */
 export function findByPaymentGoal(inventory, goal) {
-  const maxPrice = maxVautoPriceForPayment(goal);
+  // Display ceiling: the most a vehicle could cost and still fit, using the
+  // selected term. New (or mixed "Any") inventory uses the lower new APR, so
+  // the ceiling is higher; a Used-only search uses used rates. Age caps are
+  // applied per vehicle below, never to this optimistic ceiling.
+  const ceilingCondition = goal.condition === 'Used' || goal.condition === 'U' ? 'Used' : 'New';
+  const maxPrice = maxVautoPriceForPayment({ ...goal, condition: ceilingCondition, year: undefined, name: undefined, vehicle: undefined });
   const matches = inventory
-    .filter((v) => v.price && v.price <= maxPrice)
+    .filter((v) => v.price)
     .filter((v) => !goal.type || goal.type === 'Any' || v.type === goal.type)
     .filter((v) => !goal.condition || goal.condition === 'Any' || v.condition === goal.condition)
     .map((vehicle) => {
-      const quote = buildQuote({ ...goal, vautoPrice: vehicle.price, condition: vehicle.condition });
+      const quote = buildQuote({ ...goal, vautoPrice: vehicle.price, condition: vehicle.condition, year: vehicle.year, name: vehicle.name });
       return { vehicle, quote, gap: Math.round((goal.payment - quote.payment) * 100) / 100 };
     })
     .filter((m) => m.quote.payment <= goal.payment)

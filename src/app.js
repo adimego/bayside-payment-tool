@@ -1,5 +1,5 @@
 // Bayside payment tool UI (phase 1: static, reads data/inventory.json).
-import { buildQuote, TIERS, TERMS, LINKS, DISCLAIMERS, PROCESSING_FEE, REGISTRATION, TAX_RATE, MILITARY_REBATE, isUsedVehicle } from './quote.js';
+import { buildQuote, TIERS, TERMS, LINKS, DISCLAIMERS, PROCESSING_FEE, REGISTRATION, TAX_RATE, MILITARY_REBATE, isUsedVehicle, maxTermForYear, clampTerm, termCapNote } from './quote.js';
 import { websiteUrl, similarVehicles, findByPaymentGoal, searchInventory } from './inventory.js';
 import { VEHICLE_TYPES } from './vauto-parse.js';
 import { rankSuggestions } from './ai-hook.js';
@@ -37,20 +37,23 @@ function dealParams(d) {
   return p.toString();
 }
 
-function dealFormHtml(d, { idPrefix = 'd', allowMilitary = true } = {}) {
+function dealFormHtml(d, { idPrefix = 'd', allowMilitary = true, year = null, capTerms = false } = {}) {
+  const maxTerm = capTerms ? maxTermForYear(year) : 84;
+  const selected = clampTerm(d.term, capTerms ? year : null);
+  const note = capTerms ? termCapNote(year) : '';
   return `
   <div class="deal-grid">
     <div><label for="${idPrefix}-down">Down payment</label><input id="${idPrefix}-down" name="down" inputmode="decimal" value="${d.down || ''}" placeholder="$0"></div>
     <div><label for="${idPrefix}-tier">Credit</label><select id="${idPrefix}-tier" name="tier">${TIERS.map((t) => `<option ${t.id === d.tier ? 'selected' : ''}>${t.id}</option>`).join('')}</select></div>
     <div><label for="${idPrefix}-trade">Trade-in value</label><input id="${idPrefix}-trade" name="tradeValue" inputmode="decimal" value="${d.tradeValue || ''}" placeholder="$0"></div>
     <div><label for="${idPrefix}-payoff">Trade loan payoff</label><input id="${idPrefix}-payoff" name="tradePayoff" inputmode="decimal" value="${d.tradePayoff || ''}" placeholder="$0"></div>
-    <div class="wide"><label>Term</label><div class="seg" role="group" aria-label="Term">${TERMS.map((t) => `<button type="button" data-term="${t}" aria-pressed="${t === d.term}">${t} mo</button>`).join('')}</div></div>
+    <div class="wide"><label>Term</label><div class="seg" role="group" aria-label="Term">${TERMS.map((t) => `<button type="button" data-term="${t}" aria-pressed="${t === selected}" ${t > maxTerm ? 'disabled' : ''}>${t} mo</button>`).join('')}</div>${note ? `<p class="hint term-note">${esc(note)}</p>` : ''}</div>
     <div class="wide" id="${idPrefix}-military-row" ${allowMilitary ? '' : 'hidden'}><label class="check"><input type="checkbox" name="military" ${d.military ? 'checked' : ''}> Military or First Responder ($${MILITARY_REBATE} rebate)</label></div>
     <div class="wide"><p class="hint">Not sure what your trade is worth? <a href="${LINKS.valueMyTrade}" target="_blank" rel="noopener">Value My Trade</a></p></div>
   </div>`;
 }
 
-function bindDealForm(root, d, onChange) {
+function bindDealForm(root, d, onChange, { onTerm } = {}) {
   root.querySelectorAll('input[name], select[name]').forEach((el) => {
     el.addEventListener('input', () => {
       const k = el.name;
@@ -61,7 +64,9 @@ function bindDealForm(root, d, onChange) {
     });
   });
   root.querySelectorAll('[data-term]').forEach((b) => b.addEventListener('click', () => {
+    if (b.disabled) return;
     d.term = Number(b.dataset.term);
+    if (onTerm) onTerm(d.term);
     root.querySelectorAll('[data-term]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
     onChange();
   }));
@@ -72,7 +77,7 @@ function badges(v) {
 }
 
 function vehicleCard(v, d, extra = '') {
-  const q = v.price ? buildQuote({ ...d, vautoPrice: v.price, condition: v.condition }) : null;
+  const q = v.price ? buildQuote({ ...d, vautoPrice: v.price, condition: v.condition, year: v.year, name: v.name }) : null;
   const miles = v.condition === 'Used' && v.odometer ? ` · ${v.odometer.toLocaleString()} mi` : '';
   return `
   <a class="vcard" href="#/vehicle/${encodeURIComponent(v.stock)}">
@@ -106,7 +111,7 @@ function renderShop() {
           ${[['price-asc', 'Price: low to high'], ['price-desc', 'Price: high to low'], ['year-desc', 'Newest year'], ['miles-asc', 'Lowest miles']].map(([v, l]) => `<option value="${v}" ${v === shopState.sort ? 'selected' : ''}>${l}</option>`).join('')}
         </select></div>
       </div>
-      <p class="hint">Prices shown are the Total Selling Price (includes the $${PROCESSING_FEE} processing fee). Monthly estimates use your deal settings: ${esc(deal.tier)} credit, ${deal.term} months, ${money0(deal.down)} down.</p>
+      <p class="hint">Prices shown are the Total Selling Price (includes the $${PROCESSING_FEE} processing fee). Monthly estimates use your deal settings: ${esc(deal.tier)} credit, ${deal.term} months, ${money0(deal.down)} down. Older vehicles may have a shorter maximum term.</p>
     </div>
     <p class="count" id="count"></p>
     <div class="grid" id="list"></div>`;
@@ -148,8 +153,11 @@ function renderVehicle(stock, params) {
     app.innerHTML = `<a class="back" href="#/">← All vehicles</a><p class="empty">Stock # ${esc(stock)} isn't in today's inventory. It may have sold. Call <a href="tel:+15407752277">(540) 775-2277</a>.</p>`;
     return;
   }
+  let preferredTerm = deal.term;
   const d = dealFromParams(params);
+  d.term = clampTerm(d.term, v.year);
   const sims = similarVehicles(v, inventory);
+  const cardDeal = { ...d, term: preferredTerm };
   app.innerHTML = `
     <a class="back" href="#/">← All vehicles</a>
     <div class="quote-layout">
@@ -167,7 +175,7 @@ function renderVehicle(stock, params) {
           <p class="site-link"><a class="btn small" href="${websiteUrl(v.stock)}" target="_blank" rel="noopener">See photos and options on baysidecdjrva.com</a></p>
         </div>
         ${v.price ? `
-        <div class="card" id="deal-form"><h2>Your deal</h2>${dealFormHtml(d, { allowMilitary: !isUsedVehicle(v.condition) })}</div>` : `
+        <div class="card" id="deal-form"><h2>Your deal</h2>${dealFormHtml(d, { allowMilitary: !isUsedVehicle(v.condition), year: v.year, capTerms: true })}</div>` : `
         <div class="card"><h2>Call for Price</h2><p>This vehicle doesn't have a listed price yet, so we can't show a payment. Call <a href="tel:+15407752277">(540) 775-2277</a> for a quote.</p>
           <div class="btns"><a class="btn primary" href="${LINKS.applyForFinancing}" target="_blank" rel="noopener">Apply for Financing</a><a class="btn" href="${LINKS.valueMyTrade}" target="_blank" rel="noopener">Value My Trade</a></div></div>`}
       </div>
@@ -183,15 +191,15 @@ function renderVehicle(stock, params) {
       </aside>` : ''}
     </div>
     <h2 class="similar-heading">Similar vehicles</h2>
-    <div class="grid">${sims.length ? sims.map((s) => vehicleCard(s, d)).join('') : '<p class="empty">No close matches in stock right now.</p>'}</div>`;
+    <div class="grid">${sims.length ? sims.map((s) => vehicleCard(s, cardDeal)).join('') : '<p class="empty">No close matches in stock right now.</p>'}</div>`;
 
   if (!v.price) return;
   const draw = () => {
-    document.getElementById('quote').innerHTML = breakdownHtml(buildQuote({ ...d, vautoPrice: v.price, condition: v.condition }));
-    deal = { ...d }; saveDeal();
+    document.getElementById('quote').innerHTML = breakdownHtml(buildQuote({ ...d, vautoPrice: v.price, condition: v.condition, year: v.year, name: v.name }));
+    deal = { ...d, term: preferredTerm }; saveDeal();
     history.replaceState(null, '', `#/vehicle/${encodeURIComponent(v.stock)}?${dealParams(d)}`);
   };
-  bindDealForm(document.getElementById('deal-form'), d, draw);
+  bindDealForm(document.getElementById('deal-form'), d, draw, { onTerm: (t) => { preferredTerm = t; } });
   document.getElementById('share').addEventListener('click', async (e) => {
     const url = location.href;
     try { await navigator.clipboard.writeText(url); e.target.textContent = 'Link copied'; }
@@ -233,7 +241,7 @@ function renderGoal() {
     const ranked = await rankSuggestions(matches, goal); // AI hook (later phase); phase 1 returns matches as-is
     if (mySeq !== seq) return;
     document.getElementById('ceiling').innerHTML = maxPrice > 0
-      ? `A ${money0(goalState.payment)}/mo payment fits a vehicle priced up to <strong>${money0(maxPrice + PROCESSING_FEE)}</strong><br><span style="font-size:.85rem;opacity:.85">Total Selling Price, with ${esc(d.tier)} credit over ${d.term} months</span>`
+      ? `A ${money0(goalState.payment)}/mo payment fits a vehicle priced up to <strong>${money0(maxPrice + PROCESSING_FEE)}</strong><br><span style="font-size:.85rem;opacity:.85">Total Selling Price, with ${esc(d.tier)} credit over ${d.term} months. Older vehicles may be quoted at a shorter term.</span>`
       : 'Enter a monthly payment goal to see what fits.';
     document.getElementById('count').textContent = `${ranked.length} match${ranked.length === 1 ? '' : 'es'}, closest to your goal first`;
     document.getElementById('list').innerHTML = ranked.length
