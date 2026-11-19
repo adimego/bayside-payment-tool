@@ -59,6 +59,7 @@ input:focus, select:focus { outline: 2px solid var(--red); outline-offset: 1px; 
 .seg button[aria-pressed="true"] { background: var(--black); color: #fff; border-color: var(--black); }
 .seg button:disabled { opacity: .38; cursor: not-allowed; background: var(--bg); color: var(--muted); border-color: var(--line); }
 .term-note { margin: .45rem 0 0; }
+.zip-hint { margin: .15rem 0 .35rem; }
 
 .count { color: var(--muted); font-size: .9rem; margin: .25rem 0 .75rem; }
 .grid { display: grid; gap: .8rem; grid-template-columns: 1fr; }

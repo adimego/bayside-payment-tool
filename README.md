@@ -16,10 +16,10 @@ This is **phase 1**. It covers the quote math, inventory search, vehicle quote p
 | --- | --- |
 | Start | vAuto price. New-vehicle prices in the feed already have manufacturer rebates taken off. Used vehicles follow the same rules. |
 | Total Selling Price (TSP) | vAuto price + **$995** processing fee (the feed leaves it out) |
-| Tax | **4.25%** of the full TSP, with no trade-in tax credit |
-| Registration | **$153.50** flat |
+| Tax | **4.25%** of the full TSP for a Virginia ZIP or a blank ZIP, with no trade-in tax credit. For a non-Virginia ZIP, the tool looks up the combined local sales tax rate (ZIP-level if present, otherwise the state base rate). The customer can override the tax percent. |
+| Registration | **$153.50** for Virginia or a blank ZIP; **$753.50** for any out-of-state ZIP |
 | Military / First Responder | optional **−$500** on **new** vehicles only, applied **after** tax. Used vehicles are not eligible. |
-| Out-the-door (OTD) | TSP + tax + $153.50 − $500 (if a new vehicle and the rebate is picked) |
+| Out-the-door (OTD) | TSP + tax + registration − $500 (if a new vehicle and the rebate is picked) |
 | Trade equity | trade value − loan payoff. Positive equity comes off and negative equity is added. |
 | Amount financed | OTD − down payment − trade equity, never below $0 |
 | Payment | standard amortization: `P = A·r / (1 − (1 + r)^−n)`, where r = APR/12 |
@@ -60,6 +60,7 @@ If the selected term is longer than the cap, the tool auto-selects the maximum a
 TSP $40,000.00 → tax $1,700.00 → registration $153.50 → OTD $41,853.50 → financed $38,853.50 → 11.5% APR → **$749.53/mo**. The same deal on a new vehicle would use 11.0% APR.
 
 Every quote shows: *Rates are subject to credit approval. Taxes may vary on rebate amounts.*
+Out-of-state quotes also show: *Out-of-state tax and registration are estimates; your state may calculate them differently.*
 Every quote also has [Apply for Financing](https://www.baysidecdjrva.com/apply-for-financing.htm) and
 [Value My Trade](https://www.baysidecdjrva.com/trade-in-form.htm) buttons.
 
@@ -83,6 +84,30 @@ To refresh `data/inventory.json` from a new report:
 node scripts/import-vauto.mjs path/to/report.xlsx   # .csv also works
 ```
 
+## Sales tax data
+
+An optional customer ZIP on the quote page and in Find by payment sets the tax and registration:
+
+- Virginia ZIP (for example 22485) or a blank ZIP: **4.25%** tax and **$153.50** registration.
+- Any other recognized US ZIP: the combined local rate for that ZIP, or the state base rate if no ZIP-level rate is on file, and **$753.50** registration.
+- Invalid input is treated like a blank ZIP (Virginia defaults). The tax percent can be typed in by hand.
+
+The lookup table is bundled as `data/tax-rates.json` (a 3-digit ZIP-prefix-to-state map, state base rates, and ZIP-level rates only where they differ from the state rate) so the GitHub Pages site needs no API keys.
+
+**Sources and as-of dates**
+
+- **State base rates:** [ReceiptEdit US State Sales Tax Dataset 2026.1](https://github.com/receiptedit/us-sales-tax-2026) (MIT), last updated **June 17, 2026**. The District of Columbia 6.00% statewide rate is from the [DC Office of Tax and Revenue](https://otr.cfo.dc.gov/).
+- **ZIP-level combined rates:** [DeepCalc US sales-tax ZIP table](https://deepcalc.com/data/us-sales-tax/zip), dominant combined rate, primarily **2026 Q3** (Ohio 2026 Q1, Iowa 2025 Q3, Nevada 2025 Q4). States without a ZIP row fall back to the state base rate. These are estimates, not street-level compliance rates.
+- **ZIP-to-state prefixes:** USPS ZIP Code prefixes via [alecperkins/zip-state](https://github.com/alecperkins/zip-state) (CC0). Prefixes 202–205 are mapped to DC (USPS unique/government ZIPs).
+
+To rebuild `data/tax-rates.json` from those sources:
+
+```sh
+node scripts/build-tax-data.mjs
+```
+
+That script downloads the prefix list, the ReceiptEdit state file, and the DeepCalc ZIP table, then writes a compact JSON file. Re-run it when a new quarter's rates are published, then run `node --test` and commit the updated `data/tax-rates.json`.
+
 ## Project layout
 
 ```
@@ -90,13 +115,16 @@ index.html              page shell (header, tabs, footer)
 styles.css              mobile-first styles
 favicon.svg
 src/quote.js            quote and payment math, pure functions (browser, Node, Deno)
+src/tax.js              ZIP lookup, tax rate, and out-of-state registration
 src/vauto-parse.js      vAuto rows → vehicle records, body → type, name → year/make/model/trim, CSV parser
 src/inventory.js        website link, similar vehicles, payment-goal finder, search
 src/ai-hook.js          rankSuggestions(): pass-through today; the AI phase plugs in here
 src/app.js              UI: shop list, vehicle quote page, find-by-payment
 scripts/import-vauto.mjs  report (.xlsx/.csv) → data/inventory.json
+scripts/build-tax-data.mjs  rebuild data/tax-rates.json from the public sources below
 scripts/lib/xlsx.mjs    tiny dependency-free .xlsx reader
 data/inventory.json     current inventory (from the Nov 19, 2026 sample report)
+data/tax-rates.json     bundled ZIP-prefix, state, and ZIP sales-tax table
 tests/                  node --test unit tests (+ sample report fixture)
 .github/workflows/test.yml  runs the tests on every push and PR, then publishes main to gh-pages
 ```

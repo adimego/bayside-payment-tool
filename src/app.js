@@ -1,5 +1,6 @@
 // Bayside payment tool UI (phase 1: static, reads data/inventory.json).
 import { buildQuote, TIERS, TERMS, LINKS, DISCLAIMERS, PROCESSING_FEE, REGISTRATION, TAX_RATE, MILITARY_REBATE, isUsedVehicle, maxTermForYear, clampTerm, termCapNote } from './quote.js';
+import { setTaxTable, lookupJurisdiction, zipHint } from './tax.js';
 import { websiteUrl, similarVehicles, findByPaymentGoal, searchInventory } from './inventory.js';
 import { VEHICLE_TYPES } from './vauto-parse.js';
 import { rankSuggestions } from './ai-hook.js';
@@ -15,7 +16,7 @@ const num = (v) => { const n = parseFloat(String(v).replace(/[^0-9.]/g, '')); re
 
 // ---------- deal settings (shared across pages, remembered on this device) ----------
 const DEAL_KEY = 'bayside.deal.v1';
-const DEFAULT_DEAL = { down: 0, tradeValue: 0, tradePayoff: 0, tier: 'Good', term: 72, military: false };
+const DEFAULT_DEAL = { down: 0, tradeValue: 0, tradePayoff: 0, tier: 'Good', term: 72, military: false, zip: '', taxOverride: null };
 function loadDeal() {
   try { return { ...DEFAULT_DEAL, ...JSON.parse(localStorage.getItem(DEAL_KEY) || '{}') }; } catch { return { ...DEFAULT_DEAL }; }
 }
@@ -30,11 +31,22 @@ function dealFromParams(params) {
   if (params.has('tier') && TIERS.some((t) => t.id === params.get('tier'))) d.tier = params.get('tier');
   if (params.has('term') && TERMS.includes(Number(params.get('term')))) d.term = Number(params.get('term'));
   if (params.has('mil')) d.military = params.get('mil') === '1';
+  if (params.has('zip')) d.zip = params.get('zip') || '';
+  if (params.has('tax')) {
+    const t = parseFloat(params.get('tax'));
+    d.taxOverride = Number.isFinite(t) ? t / 100 : null;
+  }
   return d;
 }
 function dealParams(d) {
   const p = new URLSearchParams({ down: d.down, trade: d.tradeValue, payoff: d.tradePayoff, tier: d.tier, term: d.term, mil: d.military ? 1 : 0 });
+  if (d.zip) p.set('zip', d.zip);
+  if (d.taxOverride != null) p.set('tax', String(+(d.taxOverride * 100).toFixed(4)));
   return p.toString();
+}
+
+function jurFor(d) {
+  return lookupJurisdiction(d.zip, { taxOverride: d.taxOverride });
 }
 
 function dealFormHtml(d, { idPrefix = 'd', allowMilitary = true, year = null, capTerms = false } = {}) {
@@ -47,14 +59,26 @@ function dealFormHtml(d, { idPrefix = 'd', allowMilitary = true, year = null, ca
     <div><label for="${idPrefix}-tier">Credit</label><select id="${idPrefix}-tier" name="tier">${TIERS.map((t) => `<option ${t.id === d.tier ? 'selected' : ''}>${t.id}</option>`).join('')}</select></div>
     <div><label for="${idPrefix}-trade">Trade-in value</label><input id="${idPrefix}-trade" name="tradeValue" inputmode="decimal" value="${d.tradeValue || ''}" placeholder="$0"></div>
     <div><label for="${idPrefix}-payoff">Trade loan payoff</label><input id="${idPrefix}-payoff" name="tradePayoff" inputmode="decimal" value="${d.tradePayoff || ''}" placeholder="$0"></div>
+    <div><label for="${idPrefix}-zip">Customer ZIP (optional)</label><input id="${idPrefix}-zip" name="zip" inputmode="numeric" maxlength="10" value="${esc(d.zip || '')}" placeholder="e.g. 22485" autocomplete="postal-code"></div>
+    <div><label for="${idPrefix}-tax">Tax rate (%)</label><input id="${idPrefix}-tax" name="taxPercent" inputmode="decimal" value="${(jurFor(d).taxRate * 100).toFixed(2)}"></div>
+    <div class="wide"><p class="hint zip-hint" id="${idPrefix}-zip-hint">${esc(zipHint(jurFor(d)))}</p></div>
     <div class="wide"><label>Term</label><div class="seg" role="group" aria-label="Term">${TERMS.map((t) => `<button type="button" data-term="${t}" aria-pressed="${t === selected}" ${t > maxTerm ? 'disabled' : ''}>${t} mo</button>`).join('')}</div>${note ? `<p class="hint term-note">${esc(note)}</p>` : ''}</div>
     <div class="wide" id="${idPrefix}-military-row" ${allowMilitary ? '' : 'hidden'}><label class="check"><input type="checkbox" name="military" ${d.military ? 'checked' : ''}> Military or First Responder ($${MILITARY_REBATE} rebate)</label></div>
     <div class="wide"><p class="hint">Not sure what your trade is worth? <a href="${LINKS.valueMyTrade}" target="_blank" rel="noopener">Value My Trade</a></p></div>
   </div>`;
 }
 
+function fillTaxFromZip(root, d) {
+  const taxInput = root.querySelector('input[name="taxPercent"]');
+  const hint = root.querySelector('.zip-hint');
+  const jur = jurFor(d);
+  if (taxInput && d.taxOverride == null) taxInput.value = (jur.taxRate * 100).toFixed(2);
+  if (hint) hint.textContent = zipHint(jur);
+}
+
 function bindDealForm(root, d, onChange, { onTerm } = {}) {
   root.querySelectorAll('input[name], select[name]').forEach((el) => {
+    if (el.name === 'zip' || el.name === 'taxPercent') return;
     el.addEventListener('input', () => {
       const k = el.name;
       if (k === 'military') d.military = el.checked;
@@ -63,6 +87,29 @@ function bindDealForm(root, d, onChange, { onTerm } = {}) {
       onChange();
     });
   });
+  const zipInput = root.querySelector('input[name="zip"]');
+  const taxInput = root.querySelector('input[name="taxPercent"]');
+  if (zipInput) {
+    zipInput.addEventListener('input', () => {
+      d.zip = zipInput.value;
+      d.taxOverride = null;
+      fillTaxFromZip(root, d);
+      onChange();
+    });
+  }
+  if (taxInput) {
+    taxInput.addEventListener('input', () => {
+      const raw = taxInput.value.trim();
+      if (raw === '') d.taxOverride = null;
+      else {
+        const p = parseFloat(raw);
+        d.taxOverride = Number.isFinite(p) ? p / 100 : null;
+      }
+      const hint = root.querySelector('.zip-hint');
+      if (hint) hint.textContent = zipHint(jurFor(d));
+      onChange();
+    });
+  }
   root.querySelectorAll('[data-term]').forEach((b) => b.addEventListener('click', () => {
     if (b.disabled) return;
     d.term = Number(b.dataset.term);
@@ -111,7 +158,7 @@ function renderShop() {
           ${[['price-asc', 'Price: low to high'], ['price-desc', 'Price: high to low'], ['year-desc', 'Newest year'], ['miles-asc', 'Lowest miles']].map(([v, l]) => `<option value="${v}" ${v === shopState.sort ? 'selected' : ''}>${l}</option>`).join('')}
         </select></div>
       </div>
-      <p class="hint">Prices shown are the Total Selling Price (includes the $${PROCESSING_FEE} processing fee). Monthly estimates use your deal settings: ${esc(deal.tier)} credit, ${deal.term} months, ${money0(deal.down)} down. Older vehicles may have a shorter maximum term.</p>
+      <p class="hint">Prices shown are the Total Selling Price (includes the $${PROCESSING_FEE} processing fee). Monthly estimates use your deal settings: ${esc(deal.tier)} credit, ${deal.term} months, ${money0(deal.down)} down. Older vehicles may have a shorter maximum term. Tax and registration follow the ZIP in your deal settings, if you entered one.</p>
     </div>
     <p class="count" id="count"></p>
     <div class="grid" id="list"></div>`;
@@ -134,8 +181,8 @@ function breakdownHtml(q) {
     <div class="sub">${q.term} months at ${q.apr.toFixed(1)}% APR (${esc(q.tier)} credit)</div></div>
   <table class="breakdown">
     <tr><td>Total Selling Price <span class="hint">(incl. $${PROCESSING_FEE} processing fee)</span></td><td>${money(q.totalSellingPrice)}</td></tr>
-    <tr class="plus"><td>Tax (${(TAX_RATE * 100).toFixed(2)}%)</td><td>+${money(q.tax)}</td></tr>
-    <tr class="plus"><td>Registration</td><td>+${money(REGISTRATION)}</td></tr>
+    <tr class="plus"><td>${esc(q.taxLabel || ('Tax (' + (q.taxRate * 100).toFixed(2) + '%)'))}</td><td>+${money(q.tax)}</td></tr>
+    <tr class="plus"><td>Registration${q.outOfState ? ' (out of state)' : ''}</td><td>+${money(q.registration)}</td></tr>
     ${q.militaryRebate ? `<tr class="minus"><td>Military / First Responder rebate</td><td>−${money(q.militaryRebate)}</td></tr>` : ''}
     <tr class="total"><td>Out-the-door price</td><td>${money(q.outTheDoor)}</td></tr>
     ${q.down ? `<tr class="minus"><td>Down payment</td><td>−${money(q.down)}</td></tr>` : ''}
@@ -286,6 +333,12 @@ async function start() {
     const res = await fetch('data/inventory.json', { cache: 'no-cache' });
     const data = await res.json();
     inventory = data.vehicles;
+    try {
+      const taxRes = await fetch('data/tax-rates.json', { cache: 'no-cache' });
+      setTaxTable(await taxRes.json());
+    } catch (taxErr) {
+      console.error(taxErr);
+    }
     const when = new Date(data.generatedAt);
     document.getElementById('inv-date').textContent = `Inventory updated ${when.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}.`;
   } catch (err) {

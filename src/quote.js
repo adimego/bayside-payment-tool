@@ -2,9 +2,11 @@
 // Pure functions only (no DOM), so the same module runs in the browser,
 // in Node tests, and later in a Supabase Edge Function (Deno).
 
+import { lookupJurisdiction, taxLineLabel, OUT_OF_STATE_DISCLAIMER, VA_TAX_RATE, VA_REGISTRATION } from './tax.js';
+
 export const PROCESSING_FEE = 995;      // added to the vAuto price (feed leaves it out)
-export const TAX_RATE = 0.0425;         // on the full Total Selling Price, no trade credit
-export const REGISTRATION = 153.5;      // flat VA title and registration
+export const TAX_RATE = VA_TAX_RATE;    // default VA rate on the full Total Selling Price, no trade credit
+export const REGISTRATION = VA_REGISTRATION; // default VA title and registration
 export const MILITARY_REBATE = 500;     // Military / First Responder, taken off AFTER tax
 
 export const TERMS = [36, 48, 60, 72, 84];
@@ -30,6 +32,7 @@ export const DISCLAIMERS = [
   'Rates are subject to credit approval.',
   'Taxes may vary on rebate amounts.',
 ];
+export { OUT_OF_STATE_DISCLAIMER };
 
 export const LINKS = {
   applyForFinancing: 'https://www.baysidecdjrva.com/apply-for-financing.htm',
@@ -140,6 +143,8 @@ export function isUsedVehicle(condition) {
  *   New vehicles also get a 0.5 point lower APR than used.
  * @param {number} [o.year]  model year; used to cap the term. Falls back to o.name.
  * @param {string} [o.name]  vehicle string, used only to parse a year if o.year is missing.
+ * @param {string} [o.zip]  optional customer ZIP. VA or blank keeps 4.25% tax and $153.50 registration.
+ * @param {number} [o.taxOverride]  optional decimal tax rate entered by the customer.
  */
 export function buildQuote(o) {
   if (o == null || o.vautoPrice == null || !Number.isFinite(Number(o.vautoPrice)) || Number(o.vautoPrice) <= 0) {
@@ -155,10 +160,14 @@ export function buildQuote(o) {
   const term = clampTerm(o.term ?? 72, year);
   const military = Boolean(o.military);
 
+  const jur = lookupJurisdiction(o.zip, { taxOverride: o.taxOverride, taxTable: o.taxTable });
+  const taxRate = jur.taxRate;
+  const registration = jur.registration;
+
   const totalSellingPrice = cents(vautoPrice + PROCESSING_FEE);
-  const tax = cents(totalSellingPrice * TAX_RATE);
+  const tax = cents(totalSellingPrice * taxRate);
   const militaryRebate = military && !isUsedVehicle(o.condition) ? MILITARY_REBATE : 0;
-  const outTheDoor = cents(totalSellingPrice + tax + REGISTRATION - militaryRebate);
+  const outTheDoor = cents(totalSellingPrice + tax + registration - militaryRebate);
   const tradeEquity = cents(tradeValue - tradePayoff); // negative = owes more than it's worth
   const amountFinanced = Math.max(0, cents(outTheDoor - down - tradeEquity));
   const apr = aprFor(tier, term, o.condition);
@@ -168,9 +177,15 @@ export function buildQuote(o) {
     vautoPrice,
     processingFee: PROCESSING_FEE,
     totalSellingPrice,
-    taxRate: TAX_RATE,
+    taxRate,
     tax,
-    registration: REGISTRATION,
+    taxState: jur.state,
+    taxSource: jur.taxSource,
+    taxLabel: taxLineLabel(jur),
+    zip: jur.zip,
+    zipStatus: jur.status,
+    outOfState: jur.outOfState,
+    registration,
     militaryRebate,
     outTheDoor,
     down,
@@ -184,7 +199,7 @@ export function buildQuote(o) {
     maxTerm,
     apr,
     payment,
-    disclaimers: DISCLAIMERS,
+    disclaimers: jur.outOfState ? [...DISCLAIMERS, OUT_OF_STATE_DISCLAIMER] : DISCLAIMERS,
   };
 }
 
@@ -200,11 +215,12 @@ export function maxVautoPriceForPayment(o) {
   const apr = aprFor(tier, term, o.condition);
   const down = Math.max(0, num(o.down));
   const equity = Math.max(0, num(o.tradeValue)) - Math.max(0, num(o.tradePayoff));
+  const jur = lookupJurisdiction(o.zip, { taxOverride: o.taxOverride, taxTable: o.taxTable });
   const militaryRebate = o.military && !isUsedVehicle(o.condition) ? MILITARY_REBATE : 0;
 
   const financed = principalForPayment(payment, apr, term);
   const outTheDoor = financed + down + equity;
-  const tsp = (outTheDoor - REGISTRATION + militaryRebate) / (1 + TAX_RATE);
+  const tsp = (outTheDoor - jur.registration + militaryRebate) / (1 + jur.taxRate);
   const price = tsp - PROCESSING_FEE;
   // Floor to whole dollars so a vehicle at the ceiling never quotes over the goal
   // because of cent rounding; tests confirm the round trip.
