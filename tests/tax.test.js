@@ -166,3 +166,61 @@ test('SC ZIP applies the 5% infrastructure maintenance fee with a $500 cap', () 
   assert.equal(q.taxLabel, 'Tax (SC 5.00%, $500.00 cap)');
 });
 
+test('NYC ZIP 10001 uses 8.875% combined (4% state + 4.875% local)', () => {
+  const j = lookupJurisdiction('10001');
+  assert.equal(j.state, 'NY');
+  assert.equal(j.taxRate, 0.08875);
+  assert.equal(j.stateRate, 0.04);
+  assert.equal(j.localRate, 0.04875);
+  assert.equal(j.taxSource, 'zip');
+  assert.equal(j.localMayApply, false);
+  assert.equal(taxLineLabel(j), 'Tax (NY 8.875%: state 4% + local 4.875%)');
+  const q = buildQuote({ vautoPrice: 39005, tier: 'Good', term: 72, zip: '10001' });
+  assert.equal(q.tax, 3550); // TSP $40,000 × 8.875%
+  assert.equal(q.registration, 753.5);
+  assert.equal(q.outTheDoor, 44303.5);
+  assert.equal(q.taxLabel, 'Tax (NY 8.875%: state 4% + local 4.875%)');
+});
+
+test('upstate NY ZIP 12866 (Saratoga Springs) uses 7% combined (4% state + 3% local)', () => {
+  const j = lookupJurisdiction('12866');
+  assert.equal(j.state, 'NY');
+  assert.equal(j.taxRate, 0.07);
+  assert.equal(j.stateRate, 0.04);
+  assert.equal(j.localRate, 0.03);
+  assert.equal(taxLineLabel(j), 'Tax (NY 7%: state 4% + local 3%)');
+  const q = buildQuote({ vautoPrice: 39005, tier: 'Good', term: 72, zip: '12866' });
+  assert.equal(q.tax, 2800); // TSP $40,000 × 7%
+  assert.equal(q.registration, 753.5);
+});
+
+test('PA Philadelphia ZIP 19103 uses 8% (6% state + 2% local)', () => {
+  const j = lookupJurisdiction('19103');
+  assert.equal(j.state, 'PA');
+  assert.equal(j.taxRate, 0.08);
+  assert.equal(j.stateRate, 0.06);
+  assert.equal(j.localRate, 0.02);
+  assert.equal(taxLineLabel(j), 'Tax (PA 8%: state 6% + local 2%)');
+  const q = buildQuote({ vautoPrice: 39005, tier: 'Good', term: 72, zip: '19103' });
+  assert.equal(q.tax, 3200);
+  assert.equal(q.registration, 753.5);
+});
+
+test('OH ZIP 44113 uses a combined state + local rate and labels the split', () => {
+  const j = lookupJurisdiction('44113');
+  assert.equal(j.state, 'OH');
+  assert.equal(j.taxRate, 0.08);
+  assert.equal(j.stateRate, 0.0575);
+  assert.equal(j.localRate, 0.0225);
+  assert.equal(j.taxSource, 'zip');
+  assert.equal(taxLineLabel(j), 'Tax (OH 8%: state 5.75% + local 2.25%)');
+});
+
+test('a local-tax state without a ZIP row falls back to the state rate with an explicit label', () => {
+  const j = lookupJurisdiction('90001'); // CA, no ZIP-level row in the bundled table
+  assert.equal(j.state, 'CA');
+  assert.equal(j.taxRate, 0.0725);
+  assert.equal(j.localMayApply, true);
+  assert.equal(taxLineLabel(j), 'Tax (CA 7.25%, state rate only; local tax may apply)');
+});
+

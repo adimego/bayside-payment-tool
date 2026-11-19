@@ -16,7 +16,7 @@ This is **phase 1**. It covers the quote math, inventory search, vehicle quote p
 | --- | --- |
 | Start | vAuto price. New-vehicle prices in the feed already have manufacturer rebates taken off. Used vehicles follow the same rules. |
 | Total Selling Price (TSP) | vAuto price + **$995** processing fee (the feed leaves it out) |
-| Tax | **4.25%** of the full TSP for a Virginia ZIP or a blank ZIP, with no trade-in tax credit. For a non-Virginia ZIP, the tool uses that state's **motor-vehicle** tax rate when it differs from general retail sales tax (for example Maryland's 6.5% titling excise tax, North Carolina's 3% highway use tax). Otherwise it uses the combined local sales tax rate (ZIP-level if present, otherwise the state base rate). Modeled caps (such as South Carolina's $500 infrastructure maintenance fee cap) are applied to the tax dollars. The customer can override the tax percent. |
+| Tax | **4.25%** of the full TSP for a Virginia ZIP or a blank ZIP, with no trade-in tax credit. For a non-Virginia ZIP, the tool uses that state's **motor-vehicle** tax rate when it differs from general retail sales tax (for example Maryland's 6.5% titling excise tax, North Carolina's 3% highway use tax). In states that add local tax to a vehicle purchase, it uses the combined state + local rate by ZIP when on file, and the breakdown shows the split (for example Tax (NY 8.875%: state 4% + local 4.875%)). If no ZIP-level rate is on file, it uses the state rate and labels it "state rate only; local tax may apply." Modeled caps (such as South Carolina's $500 infrastructure maintenance fee cap) are applied to the tax dollars. The customer can override the tax percent. |
 | Registration | **$153.50** for Virginia or a blank ZIP; **$753.50** for any out-of-state ZIP |
 | Military / First Responder | optional **−$500** on **new** vehicles only, applied **after** tax. Used vehicles are not eligible. |
 | Out-the-door (OTD) | TSP + tax + registration − $500 (if a new vehicle and the rebate is picked) |
@@ -90,15 +90,17 @@ An optional customer ZIP on the quote page and in Find by payment sets the tax a
 
 - Virginia ZIP (for example 22485) or a blank ZIP: **4.25%** tax and **$153.50** registration.
 - Any other recognized US ZIP: the state's motor-vehicle tax rate when one is on file, otherwise the combined local general sales rate for that ZIP (or the state base rate), and **$753.50** registration.
+- In states that add county or city tax to a vehicle purchase (for example New York), the quote uses the combined state + local rate for that ZIP when one is on file. The breakdown shows the split, such as **Tax (NY 8.875%: state 4% + local 4.875%)**. If no ZIP-level rate is on file, the label is **state rate only; local tax may apply** rather than a silent fallback.
 - Invalid input is treated like a blank ZIP (Virginia defaults). The tax percent can be typed in by hand. Typing a ZIP clears any manual tax override and fills the looked-up rate immediately.
 
-The lookup table is bundled as `data/tax-rates.json` (a 3-digit ZIP-prefix-to-state map, state base rates, ZIP-level general rates only where they differ from the state rate, and a motor-vehicle rate table) so the GitHub Pages site needs no API keys.
+The lookup table is bundled as `data/tax-rates.json` (a 3-digit ZIP-prefix-to-state map, state base rates, ZIP-level combined rates, and a motor-vehicle rate table) so the GitHub Pages site needs no API keys.
 
 **Motor-vehicle rates (as of November 2026).** Many states tax a vehicle purchase differently from general retail sales. Where a distinct titling, excise, highway-use, or document-fee rate applies, the tool uses that rate and ignores ZIP-level general sales-tax overrides. Rules that can be applied as a single percentage (or a simple cap) are modeled; the rest are flagged in the data and described below so a customer can type the rate by hand.
 
 | State | Rate used | Notes, including caps or fees not fully modeled |
 | --- | --- | --- |
-| Alabama | Combined general rate minus 2 points | State vehicle rate is 2% (general is 4%); local rates still apply. This is an estimate. |
+| Alabama | 2% state + local | State vehicle rate is 2% (general is 4%); local rates still apply. Estimated as the combined general rate minus 2 points when a ZIP row exists. |
+| Hawaii | 4.50% | 4% GET plus a 0.5% county surcharge in all four counties. Dealers may pass on up to 4.712%. |
 | Connecticut | 6.35% | A 7.75% rate may apply over $50,000; not modeled. |
 | Delaware | 5.25% | DMV document fee (no sales tax), effective October 1, 2025. |
 | District of Columbia | 6.00% estimate | Excise tax is 1%–11% by unladen weight and city MPG (EVs 1%–3%). Not modeled; enter the rate for the vehicle. |
@@ -107,16 +109,21 @@ The lookup table is bundled as `data/tax-rates.json` (a 3-digit ZIP-prefix-to-st
 | Indiana | 7.00% | Statewide; no local sales tax on vehicles. |
 | Iowa | 5.00% | Fee for new registration; sales tax does not apply. |
 | Kentucky | 6.00% | Motor vehicle usage tax; statewide. |
+| Louisiana | 5% state + local | State rate is **5%** as of January 1, 2025 (was 4.45%). Local parish and city taxes also apply. If no ZIP row is on file, the quote uses 5% and says local tax may apply. |
 | Maryland | 6.50% | Titling excise tax (general sales tax is 6%). |
 | Minnesota | 6.875% | Motor vehicle sales tax; local sales tax does not apply. A few cities have a separate local vehicle excise tax that is not included. |
 | Mississippi | 5.00% | Motor vehicles and light trucks 10,000 lbs or less (general rate is 7%). Heavier-truck rates are not modeled. |
+| New York | 4% state + local by ZIP | Combined rate of the owner's resident jurisdiction (Pub 718). NYC is **8.875%** (4% + 4.875%). An upstate example is Saratoga Springs **7%** (4% + 3%). ZIP-to-county is an estimate; official guidance is to look up the address, not the ZIP. |
 | North Carolina | 3.00% | Highway use tax. A $2,000 cap applies only to Class A/B commercial vehicles and RVs, not typical cars, SUVs, or light trucks. |
 | North Dakota | 5.00% | Motor vehicle excise tax. |
 | New Mexico | 4.00% | Motor vehicle excise tax (not gross receipts tax). |
 | Oklahoma | 4.50% | 3.25% excise + 1.25% sales tax; no local. |
+| Pennsylvania | 6% state + local in two counties | **8%** in Philadelphia (6% + 2%) and **7%** in Allegheny County (6% + 1%); 6% elsewhere. |
 | South Carolina | 5.00%, **capped at $500** | Infrastructure maintenance fee in place of sales tax. The $500 cap is applied in the quote. |
 | South Dakota | 4.00% | Motor vehicle excise tax (general sales tax is 4.2%). |
+| Tennessee | 7.00% state (estimate) | Local option tax applies only to the first $1,600, plus a 2.75% state single-article tax from $1,600.01 to $3,200. Those extras are not included (typically under $100). The tool no longer uses the full general combined ZIP rate, which would overstate tax on a vehicle. |
 | Texas | 6.25% | Motor vehicle sales tax; no local sales tax on vehicles. |
+| Utah | 4.85% state + local | Official state rate is **4.85%** (the previous 6.10% figure was a combined floor, not the state rate). Local option taxes also apply; some special resort taxes do not. |
 | Vermont | 6.00% | Purchase and use tax. A $2,486 cap on heavy trucks is not applied to typical cars or light trucks. |
 | West Virginia | 6.00% | Statewide titling sales tax. A flat $30 fee when the net price is under $500 is not modeled. This tool does not apply a trade-in tax credit. |
 
@@ -124,9 +131,11 @@ Out-of-state tax and registration remain estimates; a customer's state may also 
 
 **Sources and as-of dates**
 
-- **Motor-vehicle rates:** Official state DMV and department-of-revenue pages and statutes (Maryland Transportation Article § 13-809; North Carolina G.S. 105-187.3; South Carolina Code § 56-3-627 / SCDMV infrastructure maintenance fee; Georgia DOR TAVT; DC DMV excise tax schedule effective February 17, 2025; Delaware DMV document fee effective October 1, 2025; and the others listed above), corroborated by the [Pennsylvania DOR Sales and Use Tax Credit Chart (REV-227)](https://www.pa.gov/content/dam/copapwp-pagov/en/revenue/documents/formsandpublications/formsforbusinesses/sut/documents/rev-227.pdf), updated **September 12, 2026**. Vehicle-rate table as of **November 2026**.
-- **State base rates (general sales tax, used when no vehicle-specific rate is on file):** [ReceiptEdit US State Sales Tax Dataset 2026.1](https://github.com/receiptedit/us-sales-tax-2026) (MIT), last updated **June 17, 2026**.
-- **ZIP-level combined general rates:** [DeepCalc US sales-tax ZIP table](https://deepcalc.com/data/us-sales-tax/zip), dominant combined rate, primarily **2026 Q3** (Ohio 2026 Q1, Iowa 2025 Q3, Nevada 2025 Q4). Used only in states that tax vehicles at the general combined rate. These are estimates, not street-level compliance rates.
+- **Motor-vehicle rates:** Official state DMV and department-of-revenue pages and statutes (Maryland Transportation Article § 13-809; North Carolina G.S. 105-187.3; South Carolina Code § 56-3-627 / SCDMV infrastructure maintenance fee; Georgia DOR TAVT; DC DMV excise tax schedule effective February 17, 2025; Delaware DMV document fee effective October 1, 2025; Louisiana Department of Revenue 5% state rate effective January 1, 2025; Hawaii GET plus county surcharge; Tennessee auto dealership / single-article manuals; and the others listed above), corroborated by the [Pennsylvania DOR Sales and Use Tax Credit Chart (REV-227)](https://www.pa.gov/content/dam/copapwp-pagov/en/revenue/documents/formsandpublications/formsforbusinesses/sut/documents/rev-227.pdf), updated **September 12, 2026**, and Florida DOR TIP 26A01-01 / TIP 25A01-01 state vehicle-rate charts. Vehicle-rate table as of **November 2026**.
+- **New York local rates:** [Publication 718](https://www.tax.ny.gov/pdf/publications/sales/pub718.pdf) (2/25), effective **March 1, 2025** (still the current edition as of November 2026), combined state+local rates by jurisdiction. ZIP-to-county from the [Census 2020 ZCTA-to-county relationship](https://www2.census.gov/geo/docs/maps-data/data/rel2020/zcta520/) (largest land-area overlap). Yonkers ZIPs 10701–10705 and 10710 use the Yonkers 8.875% city rate. NYS official guidance is to look up the address, not the ZIP; these ZIP rates are estimates.
+- **Pennsylvania local rates:** Pennsylvania DOR motor vehicle sales tax: 6% statewide, plus 2% for vehicles registered in Philadelphia and 1% in Allegheny County, mapped by the same Census ZCTA-to-county file (`data/ny-pa-local-zips.json`).
+- **State base rates (general sales tax, used when no vehicle-specific rate is on file):** [ReceiptEdit US State Sales Tax Dataset 2026.1](https://github.com/receiptedit/us-sales-tax-2026) (MIT), last updated **June 17, 2026**, with two corrections: Louisiana **5.00%** (effective January 1, 2025) and Utah **4.85%** (official state rate; 6.10% was a combined floor).
+- **ZIP-level combined general rates:** [DeepCalc US sales-tax ZIP table](https://deepcalc.com/data/us-sales-tax/zip), dominant combined rate, primarily **2026 Q3** (Ohio 2026 Q1, Iowa 2025 Q3, Nevada 2025 Q4). Used only in states that tax vehicles at the general combined rate (for example Ohio and Washington). These are estimates, not street-level compliance rates. States such as California, Arizona, Colorado, Illinois, and Louisiana that add local vehicle tax but are not in that ZIP file fall back to the state rate with an explicit "local tax may apply" label.
 - **ZIP-to-state prefixes:** USPS ZIP Code prefixes via [alecperkins/zip-state](https://github.com/alecperkins/zip-state) (CC0). Prefixes 202–205 are mapped to DC (USPS unique/government ZIPs).
 
 To rebuild `data/tax-rates.json` from those sources:
@@ -135,7 +144,7 @@ To rebuild `data/tax-rates.json` from those sources:
 node scripts/build-tax-data.mjs
 ```
 
-That script downloads the prefix list, the ReceiptEdit state file, and the DeepCalc ZIP table, then merges the motor-vehicle rates from `scripts/vehicle-tax-rates.mjs` and writes a compact JSON file. Re-run it when a new quarter's general rates are published, or edit `scripts/vehicle-tax-rates.mjs` when a state changes its vehicle rate, then run `node --test` and commit the updated `data/tax-rates.json`.
+That script downloads the prefix list, the ReceiptEdit state file, and the DeepCalc ZIP table, then merges the motor-vehicle rates from `scripts/vehicle-tax-rates.mjs`, applies the Louisiana and Utah base-rate corrections, and merges the New York and Pennsylvania local ZIP tables from `data/ny-pa-local-zips.json`. Re-run it when a new quarter's general rates are published, or edit `scripts/vehicle-tax-rates.mjs` when a state changes its vehicle rate, then run `node --test` and commit the updated `data/tax-rates.json`.
 
 ## Project layout
 
@@ -151,10 +160,11 @@ src/ai-hook.js          rankSuggestions(): pass-through today; the AI phase plug
 src/app.js              UI: shop list, vehicle quote page, find-by-payment
 scripts/import-vauto.mjs  report (.xlsx/.csv) → data/inventory.json
 scripts/build-tax-data.mjs  rebuild data/tax-rates.json from the public sources below
-scripts/vehicle-tax-rates.mjs  motor-vehicle titling/excise rates and unmodeled caps or fees
+scripts/vehicle-tax-rates.mjs  motor-vehicle titling/excise rates, local-tax flags, and unmodeled caps or fees
 scripts/lib/xlsx.mjs    tiny dependency-free .xlsx reader
 data/inventory.json     current inventory (from the Nov 19, 2026 sample report)
 data/tax-rates.json     bundled ZIP-prefix, state, ZIP, and motor-vehicle tax table
+data/ny-pa-local-zips.json  NY Pub 718 and PA local combined rates by ZIP
 tests/                  node --test unit tests (+ sample report fixture)
 .github/workflows/test.yml  runs the tests on every push and PR, then publishes main to gh-pages
 ```

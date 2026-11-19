@@ -2,6 +2,10 @@
 // Rates are stored packed at unit 100000 (6.50% = 6500). Caps are in dollars.
 // useLocal: false means ignore ZIP-level general sales-tax overrides.
 
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 export const VEHICLE_TAX_AS_OF = '2026-11';
 
 export const VEHICLE_TAX_SOURCE = 'Official state DMV/DOR pages and statutes, corroborated by the Pennsylvania DOR Sales and Use Tax Credit Chart (REV-227, updated 2026-09-12). These are motor-vehicle titling/excise/highway-use rates, not general retail sales-tax rates.';
@@ -9,6 +13,7 @@ export const VEHICLE_TAX_SOURCE = 'Official state DMV/DOR pages and statutes, co
 /** @type {Record<string, object>} */
 export const VEHICLE_RATES = {
   AL: {
+    rate: 2000,
     useLocal: true,
     subtractFromCombined: 2000,
     name: 'motor vehicle sales tax',
@@ -185,10 +190,197 @@ export const VEHICLE_RATES = {
       { kind: 'luxury-rate', text: 'A 7.75% rate may apply to vehicles priced over $50,000; not modeled. Enter the rate by hand if it applies.', modeled: false },
     ],
   },
+  AK: {
+    rate: 0,
+    useLocal: true,
+    name: 'local sales tax',
+    notes: [
+      { kind: 'rate', text: 'Alaska has no state sales tax. Some boroughs and cities tax vehicle purchases locally. If no ZIP rate is on file, the quote uses 0% and notes that local tax may apply.', modeled: true },
+    ],
+  },
+  AZ: {
+    rate: 5600,
+    useLocal: true,
+    name: 'transaction privilege tax',
+    notes: [
+      { kind: 'rate', text: 'Arizona charges a 5.6% state transaction privilege tax plus local rates on motor vehicle purchases.', modeled: true },
+    ],
+  },
+  AR: {
+    rate: 6500,
+    useLocal: true,
+    name: 'sales tax',
+    notes: [
+      { kind: 'rate', text: 'Arkansas charges 6.5% state sales tax plus local rates on motor vehicles, generally collected at registration.', modeled: true },
+    ],
+  },
+  CA: {
+    rate: 7250,
+    useLocal: true,
+    name: 'sales and use tax',
+    notes: [
+      { kind: 'rate', text: 'California charges a 7.25% statewide sales and use tax plus district taxes on vehicles registered in a district. If no ZIP-level combined rate is on file, the quote uses 7.25% and notes that local tax may apply.', modeled: true },
+    ],
+  },
+  CO: {
+    rate: 2900,
+    useLocal: true,
+    name: 'sales tax',
+    notes: [
+      { kind: 'rate', text: 'Colorado charges 2.9% state sales tax plus state-administered local taxes on motor vehicles, generally based on where the vehicle will be registered.', modeled: true },
+    ],
+  },
+  HI: {
+    rate: 4500,
+    useLocal: false,
+    name: 'general excise tax',
+    notes: [
+      { kind: 'rate', text: 'Hawaii GET is 4% plus a 0.5% county surcharge in all four counties, so vehicle sales are estimated at 4.50%. Dealers may pass on up to 4.712%.', modeled: true },
+    ],
+  },
+  ID: {
+    rate: 6000,
+    useLocal: true,
+    name: 'sales tax',
+    notes: [
+      { kind: 'rate', text: 'Idaho charges a 6% state sales tax on motor vehicles. A few local resort or auditorium taxes may also apply.', modeled: true },
+    ],
+  },
+  IL: {
+    rate: 6250,
+    useLocal: true,
+    name: 'sales tax',
+    notes: [
+      { kind: 'rate', text: 'Illinois dealer sales of motor vehicles are subject to the 6.25% state rate plus local retailers occupation taxes where they apply. If no ZIP-level rate is on file, the quote uses 6.25% and notes that local tax may apply.', modeled: true },
+    ],
+  },
+  KS: {
+    rate: 6500,
+    useLocal: true,
+    name: 'sales tax',
+    notes: [
+      { kind: 'rate', text: 'Kansas charges 6.5% state sales tax plus local rates on motor vehicles.', modeled: true },
+    ],
+  },
+  LA: {
+    rate: 5000,
+    useLocal: true,
+    name: 'sales tax',
+    notes: [
+      { kind: 'rate', text: 'Louisiana state sales tax is 5% as of January 1, 2025 (it had been 4.45%). Local parish and city taxes also apply to motor vehicles. If no ZIP-level combined rate is on file, the quote uses 5% and notes that local tax may apply.', modeled: true },
+    ],
+  },
+  MO: {
+    rate: 4225,
+    useLocal: true,
+    name: 'sales tax',
+    notes: [
+      { kind: 'rate', text: 'Missouri charges 4.225% state sales tax plus local rates on motor vehicles, generally collected at the license office.', modeled: true },
+    ],
+  },
+  NE: {
+    rate: 5500,
+    useLocal: true,
+    name: 'sales tax',
+    notes: [
+      { kind: 'rate', text: 'Nebraska charges 5.5% state sales tax plus local rates on motor vehicles.', modeled: true },
+    ],
+  },
+  NV: {
+    rate: 6850,
+    useLocal: true,
+    name: 'sales tax',
+    notes: [
+      { kind: 'rate', text: 'Nevada charges 6.85% state sales tax plus local rates on motor vehicles.', modeled: true },
+    ],
+  },
+  NY: {
+    rate: 4000,
+    useLocal: true,
+    name: 'sales tax',
+    notes: [
+      { kind: 'rate', text: 'New York charges 4% state sales tax plus county and city local tax (and 0.375% MCTD tax in the downstate district) on motor vehicles, at the combined rate of the owner\'s resident jurisdiction. ZIP-level rates follow Publication 718 county/city rates mapped from Census ZCTA to county; ZIP boundaries may not match tax jurisdictions exactly.', modeled: true },
+    ],
+  },
+  OH: {
+    rate: 5750,
+    useLocal: true,
+    name: 'sales tax',
+    notes: [
+      { kind: 'rate', text: 'Ohio charges 5.75% state sales tax plus county and transit rates on motor vehicles.', modeled: true },
+    ],
+  },
+  PA: {
+    rate: 6000,
+    useLocal: true,
+    name: 'sales tax',
+    notes: [
+      { kind: 'rate', text: 'Pennsylvania charges 6% state sales tax on motor vehicles, plus 2% local tax if the vehicle is registered in Philadelphia and 1% if registered in Allegheny County.', modeled: true },
+    ],
+  },
+  TN: {
+    rate: 7000,
+    useLocal: false,
+    name: 'sales tax',
+    unmodeled: true,
+    notes: [
+      { kind: 'rate', text: 'Tennessee charges 7% state sales tax on the full vehicle price. Local option tax applies only to the first $1,600 (the cap is lower in a few counties), and an additional 2.75% state single-article tax applies from $1,600.01 through $3,200. Those extras are not included (together they are typically under $100).', modeled: false },
+    ],
+  },
+  UT: {
+    rate: 4850,
+    useLocal: true,
+    name: 'sales tax',
+    notes: [
+      { kind: 'rate', text: 'Utah state sales tax is 4.85%. Local option taxes also apply to motor vehicles (some special resort or correctional-facility taxes do not). If no ZIP-level combined rate is on file, the quote uses 4.85% and notes that local tax may apply.', modeled: true },
+    ],
+  },
+  WA: {
+    rate: 6500,
+    useLocal: true,
+    name: 'sales and use tax',
+    notes: [
+      { kind: 'rate', text: 'Washington charges 6.5% state sales/use tax plus local rates on motor vehicles, generally at the rate where the vehicle will be registered.', modeled: true },
+    ],
+  },
+  WI: {
+    rate: 5000,
+    useLocal: true,
+    name: 'sales tax',
+    notes: [
+      { kind: 'rate', text: 'Wisconsin charges a 5% state sales tax plus county and stadium district taxes on motor vehicles where those taxes apply.', modeled: true },
+    ],
+  },
+  WY: {
+    rate: 4000,
+    useLocal: true,
+    name: 'sales tax',
+    notes: [
+      { kind: 'rate', text: 'Wyoming charges 4% state sales tax plus local option taxes on motor vehicles.', modeled: true },
+    ],
+  },
+
 };
+
+// Packed general state sales-tax bases that were stale in the ReceiptEdit 2026.1 file.
+export const STATE_BASE_FIXES = { LA: 5000, UT: 4850 };
+
+export function applyLocalVehicleZips(table) {
+  const path = join(dirname(fileURLToPath(import.meta.url)), '..', 'data', 'ny-pa-local-zips.json');
+  const local = JSON.parse(readFileSync(path, 'utf8'));
+  table.zips = table.zips || {};
+  for (const [z, r] of Object.entries({ ...(local.ny || {}), ...(local.pa || {}) })) table.zips[z] = r;
+  table.source = table.source || {};
+  table.source.localZips = [local.source?.ny, local.source?.pa].filter(Boolean).join(' ');
+  return table;
+}
 
 export function applyVehicleRates(table) {
   table.vehicle = VEHICLE_RATES;
+  if (table.states) {
+    for (const [st, packed] of Object.entries(STATE_BASE_FIXES)) table.states[st] = packed;
+  }
+  applyLocalVehicleZips(table);
   table.source = table.source || {};
   table.source.vehicle = `${VEHICLE_TAX_SOURCE} Vehicle-rate table as of ${VEHICLE_TAX_AS_OF}.`;
   return table;

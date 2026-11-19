@@ -33,13 +33,42 @@ export function stateForZip(zip, data = table) {
   return data.prefixes[prefix] ?? null;
 }
 
+function unitOf(data) {
+  return data?.unit || 100000;
+}
+
 function packedToRate(n, data = table) {
-  const unit = data?.unit || 100000;
-  return Number(n) / unit;
+  return Math.round(Number(n)) / unitOf(data);
+}
+
+function rateToPacked(rate, data = table) {
+  return Math.round(Number(rate) * unitOf(data));
 }
 
 function vehicleRule(state, data) {
   return data?.vehicle?.[state] || null;
+}
+
+function statePortion(state, vehicle, data) {
+  if (vehicle?.rate != null) return packedToRate(vehicle.rate, data);
+  if (state && data.states && data.states[state] != null) return packedToRate(data.states[state], data);
+  return null;
+}
+
+function splitResult(taxRate, taxSource, vehicle, state, data) {
+  const useLocal = Boolean(vehicle?.useLocal);
+  const stateRate = statePortion(state, vehicle, data);
+  const localRate = (useLocal && taxRate != null && stateRate != null)
+    ? packedToRate(Math.max(0, rateToPacked(taxRate, data) - rateToPacked(stateRate, data)), data)
+    : 0;
+  return {
+    taxRate,
+    taxSource,
+    vehicle,
+    stateRate,
+    localRate,
+    localMayApply: useLocal && taxSource === 'state',
+  };
 }
 
 function lookedUpRate(zip, state, data) {
@@ -57,19 +86,19 @@ function lookedUpRate(zip, state, data) {
       }
       if (packed != null) {
         if (vehicle.subtractFromCombined) packed = Math.max(0, packed - vehicle.subtractFromCombined);
-        return { taxRate: packedToRate(packed, data), taxSource, vehicle };
+        return splitResult(packedToRate(packed, data), taxSource, vehicle, state, data);
       }
     } else if (vehicle.rate != null) {
-      return { taxRate: packedToRate(vehicle.rate, data), taxSource: 'vehicle', vehicle };
+      return splitResult(packedToRate(vehicle.rate, data), 'vehicle', vehicle, state, data);
     }
   }
   if (data.zips && data.zips[zip] != null) {
-    return { taxRate: packedToRate(data.zips[zip], data), taxSource: 'zip', vehicle };
+    return splitResult(packedToRate(data.zips[zip], data), 'zip', vehicle, state, data);
   }
   if (state && data.states && data.states[state] != null) {
-    return { taxRate: packedToRate(data.states[state], data), taxSource: 'state', vehicle };
+    return splitResult(packedToRate(data.states[state], data), 'state', vehicle, state, data);
   }
-  return { taxRate: null, taxSource: 'none', vehicle };
+  return splitResult(null, 'none', vehicle, state, data);
 }
 
 function vehicleExtras(vehicle) {
@@ -140,6 +169,9 @@ export function lookupJurisdiction(zipInput, { taxOverride, taxTable } = {}) {
     taxName: null,
     unmodeled: false,
     vehicleNotes: [],
+    stateRate: override != null ? override : VA_TAX_RATE,
+    localRate: 0,
+    localMayApply: false,
     ...extra,
   });
 
@@ -150,7 +182,7 @@ export function lookupJurisdiction(zipInput, { taxOverride, taxTable } = {}) {
   if (!state) return vaResult('invalid', 'va');
   if (state === 'VA') return vaResult('ok', 'va', { zip });
 
-  const looked = data ? lookedUpRate(zip, state, data) : { taxRate: null, taxSource: 'none', vehicle: null };
+  const looked = data ? lookedUpRate(zip, state, data) : { taxRate: null, taxSource: 'none', vehicle: null, stateRate: null, localRate: 0, localMayApply: false };
   const extras = vehicleExtras(looked.vehicle);
   const taxRate = override != null ? override : (looked.taxRate ?? VA_TAX_RATE);
   const taxSource = override != null ? 'override' : (looked.taxSource === 'none' ? 'state' : looked.taxSource);
@@ -162,19 +194,36 @@ export function lookupJurisdiction(zipInput, { taxOverride, taxTable } = {}) {
     registration: OUT_OF_STATE_REGISTRATION,
     taxSource,
     outOfState: true,
+    stateRate: looked.stateRate,
+    localRate: looked.localRate,
+    localMayApply: taxSource === 'override' ? false : Boolean(looked.localMayApply),
     ...extras,
   };
 }
 
-/** Label for the quote breakdown, e.g. "Tax (MD 6.50%)". */
+/** Compact percent for labels: 4, 8.875, 4.875, 6.5. */
+export function formatTaxPct(rate) {
+  const p = Number(rate) * 100;
+  if (!Number.isFinite(p)) return '0';
+  if (Math.abs(p - Math.round(p)) < 1e-8) return String(Math.round(p));
+  return p.toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
+}
+
+/** Label for the quote breakdown, e.g. "Tax (MD 6.50%)" or "Tax (NY 8.875%: state 4% + local 4.875%)". */
 export function taxLineLabel(jur) {
+  const st = jur.state ? `${jur.state} ` : '';
+  if (jur.localMayApply && jur.taxSource !== 'override') {
+    return `Tax (${st}${formatTaxPct(jur.taxRate)}%, state rate only; local tax may apply)`;
+  }
+  if (jur.taxSource !== 'override' && jur.localRate > 1e-8 && jur.stateRate != null) {
+    return `Tax (${st}${formatTaxPct(jur.taxRate)}%: state ${formatTaxPct(jur.stateRate)}% + local ${formatTaxPct(jur.localRate)}%)`;
+  }
   const pct = (jur.taxRate * 100).toFixed(2);
   const est = jur.unmodeled && jur.taxSource !== 'override' ? ' est.' : '';
   const cap = jur.taxCap != null
     ? `, ${jur.taxCap.toLocaleString('en-US', { style: 'currency', currency: 'USD' })} cap`
     : '';
-  const inner = jur.state ? `${jur.state} ${pct}%${est}${cap}` : `${pct}%${est}${cap}`;
-  return `Tax (${inner})`;
+  return `Tax (${st}${pct}%${est}${cap})`;
 }
 
 export function zipHint(jur) {
@@ -186,13 +235,18 @@ export function zipHint(jur) {
   if (!jur.outOfState) {
     return `Virginia · ${pct}% tax, ${reg} registration. Leave the ZIP blank to keep these.`;
   }
+  if (jur.localMayApply && jur.taxSource !== 'override') {
+    return `${jur.state} · ${formatTaxPct(jur.taxRate)}% state rate only; local tax may apply. ${reg} registration (estimate). Enter the combined rate for your locality if you know it.`;
+  }
   const how = jur.taxSource === 'override'
     ? 'rate you entered'
-    : jur.taxName
-      ? jur.taxName
-      : jur.taxSource === 'zip'
-        ? 'combined local rate'
-        : 'state sales tax rate';
+    : jur.localRate > 1e-8 && jur.stateRate != null
+      ? `combined (${formatTaxPct(jur.stateRate)}% state + ${formatTaxPct(jur.localRate)}% local)`
+      : jur.taxName
+        ? jur.taxName
+        : jur.taxSource === 'zip'
+          ? 'combined local rate'
+          : 'state sales tax rate';
   const notes = (jur.vehicleNotes || []).filter((n) => n.modeled === false || n.kind === 'variable-rate' || jur.unmodeled).map((n) => n.text);
   const extra = notes.length ? ' ' + notes[0] : '';
   return `${jur.state} · ${pct}% ${how}, ${reg} registration (estimate).${extra}`;
