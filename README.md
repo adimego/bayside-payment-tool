@@ -7,8 +7,8 @@ Live site: https://adimego.github.io/bayside-payment-tool/
 
 Mobile-first and static (plain HTML, CSS and JavaScript modules, no build step), hosted on GitHub Pages.
 Pages serves the `gh-pages` branch. Work goes to `main`, and the GitHub Actions workflow copies `main` to `gh-pages` after the tests pass, so only tested code goes live.
-This is **phase 1**. It covers the quote math, inventory search, vehicle quote pages, similar vehicles, and a rule-based
-"find by monthly payment" tool, all running on the sample vAuto report. The back end, staff features and AI come in later phases (see below).
+This is **phase 1 plus staff accounts**. It covers the quote math, inventory search, vehicle quote pages, similar vehicles, a rule-based
+"find by monthly payment" tool (all running on the sample vAuto report), and staff login with saved, shareable quotes on Supabase. The daily vAuto import and AI suggestions come in later phases (see below).
 
 ## Quote rules
 
@@ -177,7 +177,12 @@ src/tax.js              ZIP lookup, tax rate, and out-of-state registration
 src/vauto-parse.js      vAuto rows → vehicle records, body → type, name → year/make/model/trim, CSV parser
 src/inventory.js        website link, similar vehicles, payment-goal finder, search
 src/ai-hook.js          rankSuggestions(): pass-through today; the AI phase plugs in here
-src/app.js              UI: shop list, vehicle quote page, find-by-payment
+src/app.js              UI: shop list, vehicle quote page, find-by-payment, staff routes
+src/share.js            share-link URL, first name, and saved-quote snapshots (pure helpers)
+src/staff.js            Supabase client, auth, saved quotes, admin API
+src/staff-ui.js         Staff, admin, and public shared-quote screens
+src/supabase-config.js  project URL and the public publishable (anon) key
+supabase/migrations/    Postgres schema applied to the Bayside Pricing Tool project
 scripts/import-vauto.mjs  report (.xlsx/.csv) → data/inventory.json
 scripts/build-tax-data.mjs  rebuild data/tax-rates.json from the public sources below
 scripts/vehicle-tax-rates.mjs  motor-vehicle titling/excise rates, local-tax flags, and unmodeled caps or fees
@@ -196,16 +201,47 @@ node --test                  # unit tests (Node 20+)
 python3 -m http.server 8080  # then open http://localhost:8080
 ```
 
+## Staff accounts and saved quotes
+
+The static site talks to the **Bayside Pricing Tool** Supabase project (`ilvebrdfrtlmvizwrgdy`, us-east-1) with the **publishable (anon) key only**, which is safe to ship in the public repo. The service-role / secret key is never used in this site.
+
+- **Staff** in the header opens sign in, password reset, and **Request an account** (name, email, password, optional phone).
+- A new signup creates a **pending** profile. Pending and denied users can see only their own profile. After an admin approves the request, staff can save quotes, search and delete their own quotes, and copy a customer link: `https://adimego.github.io/bayside-payment-tool/#/q/<slug>`.
+- The shared page is read-only: the saved vehicle and payment snapshot, the usual disclaimers, **Apply for Financing** and **Value My Trade**, and a **Prices and rates subject to change** note with the saved date. It shows the customer's first name only — no staff notes, no phone or email, no other staff internals.
+- **Admin** (approved admins only) has pending Approve/Deny, a staff list with Deactivate, and all quotes.
+- The public cannot `select` the `quotes` table. The only anonymous read is the `get_shared_quote(slug)` RPC.
+
+### Auth settings the dashboard still needs
+
+The connector cannot set Auth URL Configuration. In the Supabase dashboard, open the Bayside Pricing Tool project → **Authentication → URL Configuration** and set:
+
+- **Site URL:** `https://adimego.github.io/bayside-payment-tool/`
+- **Redirect URLs:** `https://adimego.github.io/bayside-payment-tool/`, `https://adimego.github.io/bayside-payment-tool/**`
+
+Email confirmation is on by default for hosted projects (Authentication → Providers → Email). Leave it on unless you have a reason to turn it off.
+
+**Default email rate limits** (built-in SMTP, as of 3 Sep 2024): confirmation, recovery, and similar auth emails are limited to **2 emails per hour** combined, and you can only raise that by adding your own custom SMTP under Authentication → Emails → SMTP Settings. Signup and recovery also have a **60-second** wait between requests to the same endpoint. See [Auth rate limits](https://supabase.com/docs/guides/platform/going-into-prod#rate-limiting-resource-allocation--abuse-prevention).
+
+### Promote the first admin
+
+Do not guess the email. After Adam submits a staff request, run this in the Supabase SQL editor (paste his real email):
+
+```sql
+update public.profiles
+set role = 'admin',
+    status = 'approved',
+    approved_at = now(),
+    approved_by = id
+where email = 'PASTE_EMAIL_HERE';
+```
+
 ## Upcoming phases
 
-1. **Supabase back end.** Supabase provides the database, auth and Edge Functions. Keys live in Supabase project settings and GitHub secrets, never in this repo.
-2. **Daily vAuto import by email.** vAuto emails the scheduled report every morning to a Postmark inbound address. Postmark posts the attachment to a Supabase Edge Function, which reuses `src/vauto-parse.js` and loads the inventory table. The site then reads inventory from Supabase instead of `data/inventory.json`.
-3. **Staff accounts.** Salespeople fill out an account request form, and Adam approves or declines each request on an admin screen. Each salesperson gets their own login.
-4. **Saved quotes.** Staff save a quote tagged with their name and get a **Copy Link** button to paste into the CRM's texting platform. This means no separate texting service, and opt-in stays with the CRM. Phase 1 already puts the deal inputs in the vehicle page URL (`#/vehicle/<stock>?down=…&tier=…`), so a link reproduces the quote.
-5. **AI vehicle suggestions.** A Supabase Edge Function ranks the payment-goal matches by fit and explains each pick in plain words. It plugs in at `rankSuggestions()` in `src/ai-hook.js`. Payments always come from `src/quote.js`, never from the AI.
-6. **Launch.** Add a custom domain and link the tool from baysidecdjrva.com.
+1. **Daily vAuto import by email.** vAuto emails the scheduled report every morning to a Postmark inbound address. Postmark posts the attachment to a Supabase Edge Function, which reuses `src/vauto-parse.js` and loads the inventory table. The site then reads inventory from Supabase instead of `data/inventory.json`.
+2. **AI vehicle suggestions.** A Supabase Edge Function ranks the payment-goal matches by fit and explains each pick in plain words. It plugs in at `rankSuggestions()` in `src/ai-hook.js`. Payments always come from `src/quote.js`, never from the AI.
+3. **Launch.** Add a custom domain and link the tool from baysidecdjrva.com.
 
 ## Notes
 
-- No secrets belong in this repo. It is public and served by GitHub Pages.
+- The service-role / secret key must never be committed. The publishable (anon) key is meant to be public and is in `src/supabase-config.js`.
 - All figures are estimates, not an offer of credit.

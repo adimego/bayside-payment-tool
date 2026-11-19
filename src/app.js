@@ -4,6 +4,9 @@ import { setTaxTable, lookupJurisdiction, zipHint, applyZipToDeal, applyTaxPerce
 import { websiteUrl, similarVehicles, findByPaymentGoal, searchInventory } from './inventory.js';
 import { VEHICLE_TYPES } from './vauto-parse.js';
 import { rankSuggestions } from './ai-hook.js';
+import { initStaffAuth, onStaffChange, isApprovedStaff } from './staff.js';
+import { renderStaff, renderAdmin, renderSharedQuote, bindSaveQuote, updateStaffNav } from './staff-ui.js';
+import { parseShareSlug } from './share.js';
 
 const app = document.getElementById('app');
 let inventory = [];
@@ -194,6 +197,15 @@ function breakdownHtml(q) {
   <div class="disclaimer">${DISCLAIMERS.map((t) => `<p>${esc(t)}</p>`).join('')}<p>Estimate only, not an offer of credit.</p></div>`;
 }
 
+function breakdownFromSaved(results, publicDeal = {}) {
+  const q = { ...(results || {}) };
+  if (q.down == null && publicDeal.down != null) q.down = Number(publicDeal.down) || 0;
+  if (q.term == null && publicDeal.term != null) q.term = Number(publicDeal.term) || 0;
+  if (!q.tier && publicDeal.tier) q.tier = publicDeal.tier;
+  if (!q.payment && q.payment !== 0) return '<p class="empty">This saved quote is missing payment details.</p>';
+  return breakdownHtml(q);
+}
+
 function renderVehicle(stock, params) {
   setTab('shop');
   const v = inventory.find((x) => x.stock === stock);
@@ -255,6 +267,14 @@ function renderVehicle(stock, params) {
     setTimeout(() => { e.target.textContent = 'Copy quote link'; }, 2000);
   });
   draw();
+  if (isApprovedStaff()) {
+    const aside = document.querySelector('.quote-summary');
+    bindSaveQuote(aside, {
+      vehicle: v,
+      deal: d,
+      getResults() { return buildQuote({ ...d, vautoPrice: v.price, condition: v.condition, year: v.year, name: v.name }); },
+    });
+  }
 }
 
 const goalState = { payment: 600, type: 'SUV', condition: 'Any' };
@@ -314,12 +334,30 @@ function renderGoal() {
 
 // ---------- router ----------
 function route() {
+  updateStaffNav();
+  const shareSlug = parseShareSlug(location.hash, location.search);
+  if (shareSlug && !(location.hash.replace(/^#/, '').split('?')[0].startsWith('/vehicle'))) {
+    // Prefer an explicit #/q/slug or a ?q= param, but don't steal a vehicle page.
+    const hashPath = (location.hash.replace(/^#/, '') || '/').split('?')[0];
+    const hashParts = hashPath.split('/').filter(Boolean);
+    if (hashParts[0] === 'q' || (!hashParts[0] && shareSlug) || (location.search && new URLSearchParams(location.search).get('q'))) {
+      if (hashParts[0] !== 'q' && !hashParts[0]) {
+        history.replaceState(null, '', `#/q/${encodeURIComponent(shareSlug)}`);
+      }
+      setTab('');
+      renderSharedQuote(app, shareSlug, { breakdownFromSaved });
+      return;
+    }
+  }
   const hash = location.hash.replace(/^#/, '') || '/';
   const [path, query = ''] = hash.split('?');
   const params = new URLSearchParams(query);
   const parts = path.split('/').filter(Boolean);
   if (parts[0] === 'vehicle' && parts[1]) renderVehicle(decodeURIComponent(parts[1]), params);
   else if (parts[0] === 'goal') renderGoal();
+  else if (parts[0] === 'staff') { setTab('staff'); renderStaff(app, parts); }
+  else if (parts[0] === 'admin') { setTab('admin'); renderAdmin(app); }
+  else if (parts[0] === 'q' && parts[1]) { setTab(''); renderSharedQuote(app, decodeURIComponent(parts[1]), { breakdownFromSaved }); }
   else renderShop();
 }
 
@@ -330,6 +368,14 @@ window.addEventListener('hashchange', () => {
 });
 
 async function start() {
+  await initStaffAuth();
+  updateStaffNav();
+  onStaffChange(() => {
+    updateStaffNav();
+    const path = (location.hash.replace(/^#/, '') || '/').split('?')[0];
+    const top = path.split('/').filter(Boolean)[0];
+    if (top === 'staff' || top === 'admin') route();
+  });
   try {
     const res = await fetch('data/inventory.json', { cache: 'no-cache' });
     const data = await res.json();
@@ -343,9 +389,13 @@ async function start() {
     const when = new Date(data.generatedAt);
     document.getElementById('inv-date').textContent = `Inventory updated ${when.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}.`;
   } catch (err) {
-    app.innerHTML = '<p class="empty">Inventory could not be loaded. Please call (540) 775-2277.</p>';
+    const top = ((location.hash.replace(/^#/, '') || '/').split('?')[0]).split('/').filter(Boolean)[0];
+    if (top !== 'staff' && top !== 'admin' && top !== 'q') {
+      app.innerHTML = '<p class="empty">Inventory could not be loaded. Please call (540) 775-2277.</p>';
+      console.error(err);
+      return;
+    }
     console.error(err);
-    return;
   }
   lastPath = location.hash.split('?')[0];
   route();
