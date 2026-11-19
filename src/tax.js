@@ -178,6 +178,7 @@ export function lookupJurisdiction(zipInput, { taxOverride, taxTable } = {}) {
     localMayApply: false,
     baseTaxRate: override != null ? override : VA_TAX_RATE,
     vaBusinessRate: 0,
+    ...tradeCreditFields('VA', data),
     ...extra,
   });
 
@@ -210,7 +211,64 @@ export function lookupJurisdiction(zipInput, { taxOverride, taxTable } = {}) {
     localRate: looked.localRate,
     localMayApply: taxSource === 'override' ? false : Boolean(looked.localMayApply),
     ...extras,
+    ...tradeCreditFields(state, data),
   };
+}
+
+
+function tradeCreditFields(state, data) {
+  const row = data?.tradeCredit?.[state] || { rule: state === 'VA' ? 'none' : 'full' };
+  return {
+    tradeCredit: row.rule || (state === 'VA' ? 'none' : 'full'),
+    tradeCreditCap: row.cap != null ? row.cap : null,
+    tradeCreditNoCreditRate: row.noCreditPacked != null ? packedToRate(row.noCreditPacked, data) : null,
+    tradeCreditPortionRate: row.creditPacked != null ? packedToRate(row.creditPacked, data) : null,
+    tradeCreditNote: row.note || null,
+  };
+}
+
+export function isTruckType(type) {
+  const t = String(type || '').trim().toLowerCase();
+  if (!t) return false;
+  return t === 'truck' || t.includes('crew cab') || t.includes('double cab');
+}
+
+export function formatMoney(n) {
+  return (Number(n) || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+}
+
+/**
+ * Taxable base for the out-of-state (or VA) vehicle-tax portion.
+ * Uses trade VALUE, not equity; payoff is ignored. Credit is 0 for VA and
+ * no-credit states. Michigan caps the credit. Ohio is new-only. Rhode Island
+ * skips trucks. Oklahoma split is still reduced for the credit portion.
+ */
+export function stateTaxableBase(totalSellingPrice, jur, { tradeValue = 0, condition, type } = {}) {
+  const tsp = Math.max(0, Number(totalSellingPrice) || 0);
+  const trade = Math.max(0, Number(tradeValue) || 0);
+  const rule = jur.tradeCredit || (jur.outOfState ? 'full' : 'none');
+  let credit = 0;
+  if (jur.outOfState && rule !== 'none' && rule !== 'n/a') {
+    const c = String(condition ?? '').trim().toLowerCase();
+    const isUsed = c === 'used' || c === 'u' || c === 'pre-owned' || c === 'preowned';
+    if (rule === 'new-only' && isUsed) credit = 0;
+    else if (rule === 'not-truck' && isTruckType(type)) credit = 0;
+    else if (rule === 'capped') credit = Math.min(trade, Number(jur.tradeCreditCap) || 0);
+    else credit = trade; // full, new-only (new), not-truck (non-truck), split
+  }
+  credit = Math.min(credit, tsp);
+  return { rule, credit, taxable: Math.max(0, tsp - credit) };
+}
+
+export function taxableAmountLabel(jur, { taxable, credit, rule } = {}) {
+  if (!(credit > 0)) return '';
+  if (rule === 'capped' && jur.tradeCreditCap != null) {
+    return `Taxable amount ${formatMoney(taxable)} (trade credit applied, ${jur.state} cap ${formatMoney(jur.tradeCreditCap)})`;
+  }
+  if (rule === 'split' && jur.tradeCreditPortionRate != null && jur.tradeCreditNoCreditRate != null) {
+    return `Taxable amount ${formatMoney(taxable)} (trade credit on ${formatTaxPct(jur.tradeCreditPortionRate)}% ${jur.state} sales tax; ${formatTaxPct(jur.tradeCreditNoCreditRate)}% excise on full price)`;
+  }
+  return `Taxable amount ${formatMoney(taxable)} (trade credit applied)`;
 }
 
 /** Compact percent for labels: 4, 6.50, 6.60, 0.10, 8.875, 8.975. */
@@ -277,5 +335,14 @@ export function zipHint(jur) {
             : 'state sales tax rate';
   const notes = (jur.vehicleNotes || []).filter((n) => n.modeled === false || n.kind === 'variable-rate' || jur.unmodeled).map((n) => n.text);
   const extra = notes.length ? ' ' + notes[0] : '';
-  return `${jur.state} · ${pct}% ${how}, ${reg} registration (estimate).${extra}`;
+  let creditNote = '';
+  if (jur.taxSource !== 'override') {
+    if (jur.tradeCredit === 'full') creditNote = ' A trade-in reduces the out-of-state taxable amount (the 0.10% VA business tax stays on the full price).';
+    else if (jur.tradeCredit === 'capped') creditNote = ` A trade-in reduces the out-of-state taxable amount, capped at ${formatMoney(jur.tradeCreditCap)} (the 0.10% VA business tax stays on the full price).`;
+    else if (jur.tradeCredit === 'split') creditNote = ' A trade-in reduces only part of the out-of-state tax; see the breakdown.';
+    else if (jur.tradeCredit === 'new-only') creditNote = ' A trade-in reduces the out-of-state taxable amount on new vehicles only.';
+    else if (jur.tradeCredit === 'not-truck') creditNote = ' A trade-in reduces the out-of-state taxable amount except on trucks.';
+    else if (jur.tradeCredit === 'none') creditNote = ' A trade-in does not reduce this state’s tax.';
+  }
+  return `${jur.state} · ${pct}% ${how}, ${reg} registration (estimate).${creditNote}${extra}`;
 }

@@ -2,7 +2,7 @@
 // Pure functions only (no DOM), so the same module runs in the browser,
 // in Node tests, and later in a Supabase Edge Function (Deno).
 
-import { lookupJurisdiction, taxLineLabel, OUT_OF_STATE_DISCLAIMER, VA_TAX_RATE, VA_REGISTRATION } from './tax.js';
+import { lookupJurisdiction, taxLineLabel, stateTaxableBase, taxableAmountLabel, OUT_OF_STATE_DISCLAIMER, VA_TAX_RATE, VA_REGISTRATION } from './tax.js';
 
 export const PROCESSING_FEE = 995;      // added to the vAuto price (feed leaves it out)
 export const TAX_RATE = VA_TAX_RATE;    // default VA rate on the full Total Selling Price, no trade credit
@@ -146,15 +146,81 @@ export function isUsedVehicle(condition) {
  * @param {string} [o.zip]  optional customer ZIP. VA or blank keeps 4.25% tax and $153.50 registration.
  * @param {number} [o.taxOverride]  optional decimal tax rate entered by the customer.
  */
-function taxAmount(totalSellingPrice, jur) {
-  // A manual override is the total rate. Otherwise cap (e.g. SC $500) applies only
-  // to the out-of-state vehicle portion; the 0.10% VA business tax is added uncapped.
-  if (jur.taxSource === 'override') return cents(totalSellingPrice * jur.taxRate);
+/**
+ * State/local vehicle tax may use a reduced base (trade VALUE, not equity).
+ * The 0.10% VA business tax is always charged on the full TSP when it applies,
+ * because Virginia itself does not allow a trade-in credit. A manual override
+ * is the total rate on the same taxable base the state rule would use (for
+ * Oklahoma's split, the override is applied to the full TSP). Caps such as
+ * SC $500 apply only to the out-of-state portion after any trade credit.
+ */
+export function computeTax(totalSellingPrice, jur, deal = {}) {
+  const { rule, credit, taxable } = stateTaxableBase(totalSellingPrice, jur, deal);
+  if (jur.taxSource === 'override') {
+    // Split states have two bases; an override is a single rate on the full TSP.
+    const base = rule === 'split' ? totalSellingPrice : taxable;
+    const tax = cents(base * jur.taxRate);
+    const usedCredit = rule === 'split' ? 0 : credit;
+    return {
+      tax,
+      taxable: base,
+      credit: usedCredit,
+      taxableLabel: taxableAmountLabel(jur, { taxable: base, credit: usedCredit, rule }),
+    };
+  }
+  let stateTax;
+  if (rule === 'split' && jur.tradeCreditNoCreditRate != null) {
+    const creditRate = jur.tradeCreditPortionRate || 0;
+    stateTax = cents(totalSellingPrice * jur.tradeCreditNoCreditRate + taxable * creditRate);
+  } else {
+    const baseRate = jur.baseTaxRate ?? jur.taxRate;
+    stateTax = cents(taxable * baseRate);
+    if (jur.taxCap != null) stateTax = Math.min(stateTax, jur.taxCap);
+  }
+  const biz = jur.vaBusinessRate > 0 ? cents(totalSellingPrice * jur.vaBusinessRate) : 0;
+  return {
+    tax: cents(stateTax + biz),
+    taxable,
+    credit,
+    taxableLabel: taxableAmountLabel(jur, { taxable, credit, rule }),
+  };
+}
+
+function invertTsp(outTheDoor, jur, deal = {}, militaryRebate = 0) {
+  const net = outTheDoor - jur.registration + militaryRebate;
+  const tradeValue = Math.max(0, Number(deal.tradeValue) || 0);
+  const { rule, credit } = stateTaxableBase(1e12, jur, deal); // credit allowance before the min(TSP) floor
+  const creditAmt = credit;
+  const bizRate = jur.taxSource === 'override' ? 0 : (jur.vaBusinessRate || 0);
+
+  if (jur.taxSource === 'override') {
+    const rate = jur.taxRate;
+    if (rule === 'split' || creditAmt === 0) return net / (1 + rate);
+    let tsp = (net + rate * creditAmt) / (1 + rate);
+    if (tsp < creditAmt) tsp = net; // taxable 0
+    return tsp;
+  }
+
+  if (rule === 'split' && jur.tradeCreditNoCreditRate != null) {
+    const noC = jur.tradeCreditNoCreditRate;
+    const cR = jur.tradeCreditPortionRate || 0;
+    let tsp = (net + cR * creditAmt) / (1 + noC + cR + bizRate);
+    if (tsp < creditAmt) tsp = net / (1 + noC + bizRate);
+    return tsp;
+  }
+
   const baseRate = jur.baseTaxRate ?? jur.taxRate;
-  let tax = cents(totalSellingPrice * baseRate);
-  if (jur.taxCap != null) tax = Math.min(tax, jur.taxCap);
-  if (jur.vaBusinessRate > 0) tax = cents(tax + totalSellingPrice * jur.vaBusinessRate);
-  return tax;
+  if (creditAmt === 0) {
+    let tsp = net / (1 + baseRate + bizRate);
+    if (jur.taxCap != null && tsp * baseRate > jur.taxCap) tsp = (net - jur.taxCap) / (1 + bizRate);
+    return tsp;
+  }
+  let tsp = (net + baseRate * creditAmt) / (1 + baseRate + bizRate);
+  if (tsp < creditAmt) tsp = net / (1 + bizRate);
+  else if (jur.taxCap != null && (tsp - creditAmt) * baseRate > jur.taxCap) {
+    tsp = (net - jur.taxCap) / (1 + bizRate);
+  }
+  return tsp;
 }
 
 export function buildQuote(o) {
@@ -176,7 +242,9 @@ export function buildQuote(o) {
   const registration = jur.registration;
 
   const totalSellingPrice = cents(vautoPrice + PROCESSING_FEE);
-  const tax = taxAmount(totalSellingPrice, jur);
+  const dealTax = { tradeValue, condition: o.condition, type: o.type || o.body };
+  const computed = computeTax(totalSellingPrice, jur, dealTax);
+  const tax = computed.tax;
   const militaryRebate = military && !isUsedVehicle(o.condition) ? MILITARY_REBATE : 0;
   const outTheDoor = cents(totalSellingPrice + tax + registration - militaryRebate);
   const tradeEquity = cents(tradeValue - tradePayoff); // negative = owes more than it's worth
@@ -193,6 +261,9 @@ export function buildQuote(o) {
     taxState: jur.state,
     taxSource: jur.taxSource,
     taxLabel: taxLineLabel(jur),
+    taxableAmount: computed.taxable,
+    tradeTaxCredit: computed.credit,
+    taxableLabel: computed.taxableLabel || '',
     zip: jur.zip,
     zipStatus: jur.status,
     outOfState: jur.outOfState,
@@ -231,12 +302,7 @@ export function maxVautoPriceForPayment(o) {
 
   const financed = principalForPayment(payment, apr, term);
   const outTheDoor = financed + down + equity;
-  const baseRate = jur.taxSource === 'override' ? jur.taxRate : (jur.baseTaxRate ?? jur.taxRate);
-  const bizRate = jur.taxSource === 'override' ? 0 : (jur.vaBusinessRate || 0);
-  let tsp = (outTheDoor - jur.registration + militaryRebate) / (1 + baseRate + bizRate);
-  if (jur.taxSource !== 'override' && jur.taxCap != null && tsp * baseRate > jur.taxCap) {
-    tsp = (outTheDoor - jur.registration + militaryRebate - jur.taxCap) / (1 + bizRate);
-  }
+  const tsp = invertTsp(outTheDoor, jur, { tradeValue: o.tradeValue, condition: o.condition, type: o.type || o.body }, militaryRebate);
   const price = tsp - PROCESSING_FEE;
   // Floor to whole dollars so a vehicle at the ceiling never quotes over the goal
   // because of cent rounding; tests confirm the round trip.

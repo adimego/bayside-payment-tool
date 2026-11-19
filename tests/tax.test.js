@@ -2,7 +2,7 @@ import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { setTaxTable, lookupJurisdiction, taxLineLabel, applyZipToDeal, applyTaxPercentToDeal, isTaxOverride, VA_TAX_RATE, VA_BUSINESS_TAX_RATE, VA_REGISTRATION, OUT_OF_STATE_REGISTRATION } from '../src/tax.js';
-import { buildQuote } from '../src/quote.js';
+import { buildQuote, maxVautoPriceForPayment } from '../src/quote.js';
 
 const table = JSON.parse(readFileSync(new URL('../data/tax-rates.json', import.meta.url)));
 before(() => setTaxTable(table));
@@ -243,3 +243,110 @@ test('a local-tax state without a ZIP row falls back to the state rate with an e
   assert.equal(taxLineLabel(j), 'Tax (CA 7.35%: CA 7.25% + VA business 0.10%, state rate only; local tax may apply)');
 });
 
+test('VA and no-credit states tax the full TSP even when a trade value is entered', () => {
+  const va = buildQuote({ vautoPrice: 39005, tradeValue: 10000, tradePayoff: 2000, tier: 'Good', term: 72, zip: '22485' });
+  assert.equal(va.tax, 1700);
+  assert.equal(va.tradeTaxCredit, 0);
+  assert.equal(va.taxableAmount, 40000);
+  assert.equal(va.taxableLabel, '');
+
+  const ca = buildQuote({ vautoPrice: 39005, tradeValue: 10000, tier: 'Good', term: 72, zip: '90001' });
+  assert.equal(ca.tax, 2940); // 7.25% + 0.10% of full $40,000
+  assert.equal(ca.tradeTaxCredit, 0);
+  assert.equal(ca.taxableLabel, '');
+
+  const dc = buildQuote({ vautoPrice: 39005, tradeValue: 10000, tier: 'Good', term: 72, zip: '20001' });
+  assert.equal(dc.tax, 2440); // 6.10% of full $40,000
+  assert.equal(dc.tradeTaxCredit, 0);
+
+  const hi = buildQuote({ vautoPrice: 39005, tradeValue: 10000, tier: 'Good', term: 72, zip: '96813' });
+  assert.equal(hi.tax, 1840); // 4.50% + 0.10% of full $40,000
+  assert.equal(hi.tradeTaxCredit, 0);
+});
+
+test('MD, NY and PA apply a full trade-in credit to the state portion and 0.10% VA business tax on the full TSP', () => {
+  const md = buildQuote({ vautoPrice: 39005, tradeValue: 10000, tradePayoff: 99999, tier: 'Good', term: 72, zip: '20601' });
+  // State tax $30,000 × 6.50% = $1,950; VA business $40,000 × 0.10% = $40; payoff does not change tax
+  assert.equal(md.tax, 1990);
+  assert.equal(md.taxableAmount, 30000);
+  assert.equal(md.tradeTaxCredit, 10000);
+  assert.equal(md.taxableLabel, 'Taxable amount $30,000.00 (trade credit applied)');
+  assert.equal(md.taxLabel, 'Tax (MD 6.60%: MD 6.50% + VA business 0.10%)');
+
+  const ny = buildQuote({ vautoPrice: 39005, tradeValue: 10000, tier: 'Good', term: 72, zip: '10001' });
+  // $30,000 × 8.875% = $2,662.50 + $40 = $2,702.50
+  assert.equal(ny.tax, 2702.5);
+  assert.equal(ny.taxableAmount, 30000);
+  assert.equal(ny.taxableLabel, 'Taxable amount $30,000.00 (trade credit applied)');
+
+  const pa = buildQuote({ vautoPrice: 39005, tradeValue: 10000, tier: 'Good', term: 72, zip: '19103' });
+  // $30,000 × 8% = $2,400 + $40 = $2,440
+  assert.equal(pa.tax, 2440);
+  assert.equal(pa.taxableAmount, 30000);
+});
+
+test('Michigan caps the 2026 trade-in credit at $12,000', () => {
+  const j = lookupJurisdiction('48201');
+  assert.equal(j.state, 'MI');
+  assert.equal(j.tradeCredit, 'capped');
+  assert.equal(j.tradeCreditCap, 12000);
+  const over = buildQuote({ vautoPrice: 39005, tradeValue: 15000, tier: 'Good', term: 72, zip: '48201' });
+  // Taxable $28,000 × 6% = $1,680 + $40 = $1,720
+  assert.equal(over.tax, 1720);
+  assert.equal(over.taxableAmount, 28000);
+  assert.equal(over.tradeTaxCredit, 12000);
+  assert.equal(over.taxableLabel, 'Taxable amount $28,000.00 (trade credit applied, MI cap $12,000.00)');
+  const under = buildQuote({ vautoPrice: 39005, tradeValue: 5000, tier: 'Good', term: 72, zip: '48201' });
+  // Taxable $35,000 × 6% = $2,100 + $40 = $2,140
+  assert.equal(under.tax, 2140);
+  assert.equal(under.tradeTaxCredit, 5000);
+});
+
+test('Oklahoma charges 3.25% excise on the full TSP and 1.25% sales tax on the price minus trade-in', () => {
+  const j = lookupJurisdiction('73102');
+  assert.equal(j.state, 'OK');
+  assert.equal(j.tradeCredit, 'split');
+  const q = buildQuote({ vautoPrice: 39005, tradeValue: 10000, tier: 'Good', term: 72, zip: '73102' });
+  // $40,000 × 3.25% + $30,000 × 1.25% + $40 = $1,300 + $375 + $40 = $1,715
+  assert.equal(q.tax, 1715);
+  assert.equal(q.taxableAmount, 30000);
+  assert.match(q.taxableLabel, /trade credit on 1.25% OK sales tax; 3.25% excise on full price/);
+});
+
+test('Ohio allows a trade-in credit on new vehicles only', () => {
+  const neu = buildQuote({ vautoPrice: 39005, tradeValue: 10000, tier: 'Good', term: 72, zip: '44113', condition: 'New' });
+  assert.equal(neu.tax, 2440); // $30,000 × 8% + $40
+  assert.equal(neu.tradeTaxCredit, 10000);
+  const used = buildQuote({ vautoPrice: 39005, tradeValue: 10000, tier: 'Good', term: 72, zip: '44113', condition: 'Used' });
+  assert.equal(used.tax, 3240); // full $40,000 × 8% + $40
+  assert.equal(used.tradeTaxCredit, 0);
+  assert.equal(used.taxableLabel, '');
+});
+
+test('South Carolina applies the $500 cap after the trade-in credit, and still adds 0.10% on the full TSP', () => {
+  const capped = buildQuote({ vautoPrice: 39005, tradeValue: 10000, tier: 'Good', term: 72, zip: '29201' });
+  assert.equal(capped.tax, 540); // min($30,000 × 5%, $500) + $40
+  const small = buildQuote({ vautoPrice: 5005, tradeValue: 2000, tier: 'Good', term: 72, zip: '29201' });
+  // TSP $6,000; taxable $4,000 × 5% = $200 + $6 = $206
+  assert.equal(small.tax, 206);
+  assert.equal(small.taxableAmount, 4000);
+  assert.equal(small.taxableLabel, 'Taxable amount $4,000.00 (trade credit applied)');
+});
+
+test('a manual tax override uses the state’s taxable base and is not increased by 0.10%', () => {
+  const q = buildQuote({ vautoPrice: 39005, tradeValue: 10000, tier: 'Good', term: 72, zip: '10001', taxOverride: 0.07 });
+  assert.equal(q.tax, 2100); // 7% of $30,000, no VA business tax added
+  assert.equal(q.taxableAmount, 30000);
+  assert.equal(q.taxLabel, 'Tax (NY 7.00%)');
+  const ca = buildQuote({ vautoPrice: 39005, tradeValue: 10000, tier: 'Good', term: 72, zip: '90001', taxOverride: 0.07 });
+  assert.equal(ca.tax, 2800); // no-credit state: 7% of full $40,000
+});
+
+test('Find-by-payment inversion still fits the goal when a trade credit reduces tax', () => {
+  const goal = { payment: 700, zip: '10001', tradeValue: 10000, tradePayoff: 0, down: 0, tier: 'Good', term: 72, condition: 'New' };
+  const maxP = maxVautoPriceForPayment(goal);
+  const fit = buildQuote({ ...goal, vautoPrice: maxP });
+  const over = buildQuote({ ...goal, vautoPrice: maxP + 2 });
+  assert.ok(fit.payment <= 700, `fit payment ${fit.payment} should be <= 700`);
+  assert.ok(over.payment > 700, `over payment ${over.payment} should be > 700`);
+});

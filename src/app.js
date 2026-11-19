@@ -182,7 +182,7 @@ function breakdownHtml(q) {
     <div class="sub">${q.term} months at ${q.apr.toFixed(1)}% APR (${esc(q.tier)} credit)</div></div>
   <table class="breakdown">
     <tr><td>Total Selling Price <span class="hint">(incl. $${PROCESSING_FEE} processing fee)</span></td><td>${money(q.totalSellingPrice)}</td></tr>
-    <tr class="plus"><td>${esc(q.taxLabel || ('Tax (' + (q.taxRate * 100).toFixed(2) + '%)'))}</td><td>+${money(q.tax)}</td></tr>
+    <tr class="plus"><td>${esc(q.taxLabel || ('Tax (' + (q.taxRate * 100).toFixed(2) + '%)'))}${q.taxableLabel ? `<span class="hint">${esc(q.taxableLabel)}</span>` : ''}</td><td>+${money(q.tax)}</td></tr>
     <tr class="plus"><td>Registration${q.outOfState ? ' (out of state)' : ''}</td><td>+${money(q.registration)}</td></tr>
     ${q.militaryRebate ? `<tr class="minus"><td>Military / First Responder rebate</td><td>−${money(q.militaryRebate)}</td></tr>` : ''}
     <tr class="total"><td>Out-the-door price</td><td>${money(q.outTheDoor)}</td></tr>

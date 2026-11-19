@@ -5,6 +5,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { applyTradeCredit } from './trade-credit.mjs';
 
 export const VEHICLE_TAX_AS_OF = '2026-11';
 
@@ -381,6 +382,7 @@ export function applyVehicleRates(table) {
     for (const [st, packed] of Object.entries(STATE_BASE_FIXES)) table.states[st] = packed;
   }
   applyLocalVehicleZips(table);
+  applyTradeCredit(table);
   table.source = table.source || {};
   table.source.vehicle = `${VEHICLE_TAX_SOURCE} Vehicle-rate table as of ${VEHICLE_TAX_AS_OF}.`;
   return table;
