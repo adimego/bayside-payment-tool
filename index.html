@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Payment Calculator | Bayside Chrysler Dodge Jeep Ram</title>
+  <meta name="description" content="Out-the-door prices and monthly payments on in-stock vehicles at Bayside Chrysler Dodge Jeep Ram, King George, VA.">
+  <meta name="theme-color" content="#0b2545">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="src/app.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#/">
+      <span class="brand-name">Bayside</span>
+      <span class="brand-sub">Chrysler Dodge Jeep Ram</span>
+    </a>
+    <a class="call" href="tel:+15407752277">(540) 775-2277</a>
+  </header>
+  <nav class="tabs" aria-label="Main">
+    <a href="#/" data-tab="shop">Shop inventory</a>
+    <a href="#/goal" data-tab="goal">Find by payment</a>
+  </nav>
+  <main id="app" tabindex="-1"><p class="loading">Loading inventory…</p></main>
+  <footer class="site-footer">
+    <p><strong>Bayside Chrysler Dodge Jeep Ram</strong> · 16045 James Madison Pkwy, King George, VA 22485 · <a href="tel:+15407752277">(540) 775-2277</a></p>
+    <p class="fine">Estimates only. Rates are subject to credit approval. Taxes may vary on rebate amounts. Prices include the $995 processing fee; tax is 4.25% and registration is $153.50. All vehicles subject to prior sale. <a href="https://www.baysidecdjrva.com/" rel="noopener">baysidecdjrva.com</a></p>
+    <p class="fine" id="inv-date"></p>
+  </footer>
+</body>
+</html>
