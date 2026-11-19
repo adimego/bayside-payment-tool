@@ -1,6 +1,6 @@
 // Bayside payment tool UI (phase 1: static, reads data/inventory.json).
 import { buildQuote, TIERS, TERMS, LINKS, DISCLAIMERS, PROCESSING_FEE, REGISTRATION, TAX_RATE, MILITARY_REBATE, isUsedVehicle, maxTermForYear, clampTerm, termCapNote } from './quote.js';
-import { setTaxTable, lookupJurisdiction, zipHint } from './tax.js';
+import { setTaxTable, lookupJurisdiction, zipHint, applyZipToDeal, applyTaxPercentToDeal } from './tax.js';
 import { websiteUrl, similarVehicles, findByPaymentGoal, searchInventory } from './inventory.js';
 import { VEHICLE_TYPES } from './vauto-parse.js';
 import { rankSuggestions } from './ai-hook.js';
@@ -76,6 +76,17 @@ function fillTaxFromZip(root, d) {
   if (hint) hint.textContent = zipHint(jur);
 }
 
+/** Fire on typing, paste, blur, and browser autofill (webkit animation hook). */
+function watchField(el, handler) {
+  if (!el) return;
+  const fire = () => handler(el.value);
+  for (const ev of ['input', 'change', 'keyup']) el.addEventListener(ev, fire);
+  el.addEventListener('paste', () => setTimeout(fire, 0));
+  el.addEventListener('animationstart', (e) => {
+    if (e.animationName === 'bayside-autofill') fire();
+  });
+}
+
 function bindDealForm(root, d, onChange, { onTerm } = {}) {
   root.querySelectorAll('input[name], select[name]').forEach((el) => {
     if (el.name === 'zip' || el.name === 'taxPercent') return;
@@ -89,27 +100,17 @@ function bindDealForm(root, d, onChange, { onTerm } = {}) {
   });
   const zipInput = root.querySelector('input[name="zip"]');
   const taxInput = root.querySelector('input[name="taxPercent"]');
-  if (zipInput) {
-    zipInput.addEventListener('input', () => {
-      d.zip = zipInput.value;
-      d.taxOverride = null;
-      fillTaxFromZip(root, d);
-      onChange();
-    });
-  }
-  if (taxInput) {
-    taxInput.addEventListener('input', () => {
-      const raw = taxInput.value.trim();
-      if (raw === '') d.taxOverride = null;
-      else {
-        const p = parseFloat(raw);
-        d.taxOverride = Number.isFinite(p) ? p / 100 : null;
-      }
-      const hint = root.querySelector('.zip-hint');
-      if (hint) hint.textContent = zipHint(jurFor(d));
-      onChange();
-    });
-  }
+  watchField(zipInput, () => {
+    applyZipToDeal(d, zipInput.value);
+    fillTaxFromZip(root, d);
+    onChange();
+  });
+  watchField(taxInput, () => {
+    applyTaxPercentToDeal(d, taxInput.value);
+    const hint = root.querySelector('.zip-hint');
+    if (hint) hint.textContent = zipHint(jurFor(d));
+    onChange();
+  });
   root.querySelectorAll('[data-term]').forEach((b) => b.addEventListener('click', () => {
     if (b.disabled) return;
     d.term = Number(b.dataset.term);

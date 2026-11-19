@@ -146,6 +146,12 @@ export function isUsedVehicle(condition) {
  * @param {string} [o.zip]  optional customer ZIP. VA or blank keeps 4.25% tax and $153.50 registration.
  * @param {number} [o.taxOverride]  optional decimal tax rate entered by the customer.
  */
+function taxAmount(totalSellingPrice, jur) {
+  let tax = cents(totalSellingPrice * jur.taxRate);
+  if (jur.taxSource !== 'override' && jur.taxCap != null) tax = Math.min(tax, jur.taxCap);
+  return tax;
+}
+
 export function buildQuote(o) {
   if (o == null || o.vautoPrice == null || !Number.isFinite(Number(o.vautoPrice)) || Number(o.vautoPrice) <= 0) {
     return null; // no price -> Call for Price, no quote
@@ -165,7 +171,7 @@ export function buildQuote(o) {
   const registration = jur.registration;
 
   const totalSellingPrice = cents(vautoPrice + PROCESSING_FEE);
-  const tax = cents(totalSellingPrice * taxRate);
+  const tax = taxAmount(totalSellingPrice, jur);
   const militaryRebate = military && !isUsedVehicle(o.condition) ? MILITARY_REBATE : 0;
   const outTheDoor = cents(totalSellingPrice + tax + registration - militaryRebate);
   const tradeEquity = cents(tradeValue - tradePayoff); // negative = owes more than it's worth
@@ -220,7 +226,10 @@ export function maxVautoPriceForPayment(o) {
 
   const financed = principalForPayment(payment, apr, term);
   const outTheDoor = financed + down + equity;
-  const tsp = (outTheDoor - jur.registration + militaryRebate) / (1 + jur.taxRate);
+  let tsp = (outTheDoor - jur.registration + militaryRebate) / (1 + jur.taxRate);
+  if (jur.taxSource !== 'override' && jur.taxCap != null && tsp * jur.taxRate > jur.taxCap) {
+    tsp = outTheDoor - jur.registration + militaryRebate - jur.taxCap;
+  }
   const price = tsp - PROCESSING_FEE;
   // Floor to whole dollars so a vehicle at the ceiling never quotes over the goal
   // because of cent rounding; tests confirm the round trip.

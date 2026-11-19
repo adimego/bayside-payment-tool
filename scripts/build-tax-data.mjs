@@ -5,6 +5,7 @@
 import { writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { applyVehicleRates } from './vehicle-tax-rates.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'tax-rates.json');
@@ -89,5 +90,6 @@ const out = {
   zips: zipsOut,
 };
 
+applyVehicleRates(out);
 writeFileSync(OUT, JSON.stringify(out));
 process.stderr.write(`Wrote ${OUT} (${prefixes && Object.keys(prefixes).length} prefixes, ${Object.keys(statesOut).length} states, ${Object.keys(zipsOut).length} ZIP overrides)\n`);
