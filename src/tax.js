@@ -349,7 +349,7 @@ export function zipHint(jur) {
   const how = jur.taxSource === 'override'
     ? 'rate you entered'
     : jur.vaBusinessRate > 0
-      ? `${formatTaxPct(jur.baseTaxRate)}% out-of-state + ${formatTaxPct(jur.vaBusinessRate)}% VA business tax`
+      ? `total (${formatTaxPct(jur.baseTaxRate)}% out-of-state + ${formatTaxPct(jur.vaBusinessRate)}% VA business tax)`
       : jur.localRate > 1e-8 && jur.stateRate != null
         ? `combined (${formatTaxPct(jur.stateRate)}% state + ${formatTaxPct(jur.localRate)}% local)`
         : jur.taxName
