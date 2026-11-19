@@ -71,6 +71,19 @@ input:-webkit-autofill { animation-name: bayside-autofill; }
 .vcard .title { font-weight: 700; }
 .vcard .meta { color: var(--muted); font-size: .85rem; margin-top: .2rem; }
 .vcard .nums { display: flex; justify-content: space-between; align-items: baseline; margin-top: .6rem; }
+.vcard { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: .85rem; align-items: stretch; }
+.vcard .vthumb { align-self: start; }
+.vcard .vbody { display: flex; flex-direction: column; min-width: 0; }
+
+/* Vehicle photos: 3:2, cropped to fill, neutral placeholder when missing */
+.vthumb, .vphoto { aspect-ratio: 3 / 2; width: 100%; border-radius: 8px; overflow: hidden; background: #f5f4f4; position: relative; }
+.vthumb img, .vphoto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.no-photo { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: .3rem; color: #5f5a5b; border: 1px solid var(--line); }
+.no-photo .np-name { font-weight: 700; font-size: .78rem; line-height: 1.15; }
+.no-photo .np-note { font-size: .62rem; margin-top: .15rem; letter-spacing: .02em; text-transform: uppercase; }
+.vhead-top { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: .9rem; align-items: center; }
+.vhead-top h1 { margin-bottom: .3rem; }
+.vphoto.no-photo .np-name { font-size: .85rem; }
 .price, .pay, .breakdown { font-variant-numeric: tabular-nums; }
 .price { font-weight: 700; }
 .pay { color: var(--red); font-weight: 800; font-size: 1.1rem; }
@@ -162,6 +175,11 @@ input:-webkit-autofill { animation-name: bayside-autofill; }
   .vcard .title { font-size: 1.02rem; font-weight: 700; letter-spacing: -0.015em; }
   .vcard .meta { flex: 1; }
   .vcard .nums { margin-top: auto; padding-top: .85rem; }
+  .vcard { grid-template-columns: 128px minmax(0, 1fr); gap: 1rem; }
+  .vcard .meta { flex: 1; }
+  .vhead-top { grid-template-columns: 200px minmax(0, 1fr); gap: 1.25rem; }
+  .vphoto.no-photo .np-name { font-size: 1rem; }
+  .vphoto.no-photo .np-note { font-size: .7rem; }
   .pay { font-weight: 700; }
   .specs { grid-template-columns: 9.5rem 1fr; gap: .45rem 1.25rem; }
   .breakdown .hint { display: block; margin: .1rem 0 0; }

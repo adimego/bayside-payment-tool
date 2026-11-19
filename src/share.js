@@ -34,6 +34,14 @@ export function parseShareSlug(hash = '', search = '') {
   return new URLSearchParams(hashQuery).get('q') || null;
 }
 
+// Same rule as cleanPhotoUrl in vauto-parse.js (kept local so this file has no imports).
+function safeSnapshotPhoto(p) {
+  const s = String(p ?? '').trim();
+  if (/^https:\/\/[^\s"'<>]+$/i.test(s)) return s;
+  if (/^assets\/thumbs\/[A-Za-z0-9_-]+\.(jpe?g|png|webp)$/i.test(s)) return s;
+  return null;
+}
+
 export function quoteVehicleSnapshot(v) {
   if (!v) return {};
   return {
@@ -45,6 +53,7 @@ export function quoteVehicleSnapshot(v) {
     price: v.price ?? null,
     condition: v.condition ?? null,
     stock: v.stock ?? null,
+    photo: safeSnapshotPhoto(v.photo),
   };
 }
 

@@ -18,6 +18,7 @@ import {
   adminSetStatus,
   adminDeactivate,
 } from './staff.js';
+import { vehiclePhotoHtml } from './inventory.js';
 import { sharedQuoteUrl, customerFirstName, dealParamsFromSnapshot, formatSavedDate } from './share.js';
 import { LINKS } from './quote.js';
 
@@ -363,9 +364,14 @@ export async function renderSharedQuote(app, slug, { breakdownFromSaved }) {
     <div class="quote-layout">
       <div class="quote-main">
         <div class="card vhead">
-          <h1>${esc(title)}</h1>
-          <div class="sub">${v.condition ? `<span class="badge ${v.condition === 'Used' ? 'used' : ''}">${esc(v.condition)}</span>` : ''}
-            ${data.stock ? 'Stock ' + esc(data.stock) : ''} · Quote for ${esc(first)}</div>
+          <div class="vhead-top">
+            ${vehiclePhotoHtml({ ...v, name: title }, { className: 'vphoto', eager: true })}
+            <div class="vhead-title">
+              <h1>${esc(title)}</h1>
+              <div class="sub">${v.condition ? `<span class="badge ${v.condition === 'Used' ? 'used' : ''}">${esc(v.condition)}</span>` : ''}
+                ${data.stock ? 'Stock ' + esc(data.stock) : ''} · Quote for ${esc(first)}</div>
+            </div>
+          </div>
         </div>
       </div>
       <aside class="card quote-summary">

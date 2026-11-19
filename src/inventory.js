@@ -1,5 +1,6 @@
 // Inventory helpers: website links, similar vehicles, payment-goal finder.
 import { buildQuote, maxVautoPriceForPayment } from './quote.js';
+import { cleanPhotoUrl } from './vauto-parse.js';
 
 export const SITE = 'https://www.baysidecdjrva.com';
 
@@ -83,4 +84,25 @@ export function searchInventory(inventory, { text = '', type = 'Any', condition 
     'miles-asc': (a, b) => (a.odometer ?? 0) - (b.odometer ?? 0),
   };
   return list.sort(sorters[sort] ?? sorters['price-asc']);
+}
+
+const escHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/** Safe photo URL for a vehicle (or saved-quote snapshot), or null. */
+export function vehiclePhoto(v) {
+  return cleanPhotoUrl(v?.photo);
+}
+
+/**
+ * 3:2 thumbnail markup. Vehicles without a photo get a neutral placeholder
+ * with the make and model so every card lines up the same way.
+ */
+export function vehiclePhotoHtml(v, { className = 'vthumb', eager = false } = {}) {
+  const name = v?.name || [v?.year, v?.make, v?.model, v?.trim].filter(Boolean).join(' ') || 'Vehicle';
+  const src = vehiclePhoto(v);
+  if (src) {
+    return `<div class="${className}"><img src="${escHtml(src)}" alt="${escHtml(name)}" width="134" height="90" loading="${eager ? 'eager' : 'lazy'}" decoding="async"></div>`;
+  }
+  const label = [v?.make, v?.model].filter(Boolean).join(' ') || name;
+  return `<div class="${className} no-photo" role="img" aria-label="${escHtml(name)}, photo coming soon"><span class="np-name">${escHtml(label)}</span><span class="np-note">Photo coming soon</span></div>`;
 }

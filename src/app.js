@@ -1,7 +1,7 @@
 // Bayside payment tool UI (phase 1: static, reads data/inventory.json).
 import { buildQuote, TIERS, TERMS, LINKS, DISCLAIMERS, PROCESSING_FEE, REGISTRATION, TAX_RATE, MILITARY_REBATE, isUsedVehicle, maxTermForYear, clampTerm, termCapNote } from './quote.js';
 import { setTaxTable, lookupJurisdiction, zipHint, applyZipToDeal, applyTaxPercentToDeal, formatTaxInputPct } from './tax.js';
-import { websiteUrl, similarVehicles, findByPaymentGoal, searchInventory } from './inventory.js';
+import { websiteUrl, similarVehicles, findByPaymentGoal, searchInventory, vehiclePhotoHtml } from './inventory.js';
 import { VEHICLE_TYPES } from './vauto-parse.js';
 import { rankSuggestions } from './ai-hook.js';
 import { initStaffAuth, onStaffChange, isApprovedStaff } from './staff.js';
@@ -132,13 +132,16 @@ function vehicleCard(v, d, extra = '') {
   const miles = v.condition === 'Used' && v.odometer ? ` · ${v.odometer.toLocaleString()} mi` : '';
   return `
   <a class="vcard" href="#/vehicle/${encodeURIComponent(v.stock)}">
-    <div class="top"><span class="title">${esc(v.name)}</span></div>
-    <div class="meta">${badges(v)} ${esc(v.type ?? '')} · ${esc(v.color ?? '')}${miles} · Stock ${esc(v.stock)}</div>
-    <div class="nums">
-      ${q ? `<span class="price">${money0(q.totalSellingPrice)}</span><span class="pay">${money0(q.payment)}<small>/mo est.</small></span>`
-          : '<span class="cfp">Call for Price</span><span></span>'}
+    ${vehiclePhotoHtml(v)}
+    <div class="vbody">
+      <div class="top"><span class="title">${esc(v.name)}</span></div>
+      <div class="meta">${badges(v)} ${esc(v.type ?? '')} · ${esc(v.color ?? '')}${miles} · Stock ${esc(v.stock)}</div>
+      <div class="nums">
+        ${q ? `<span class="price">${money0(q.totalSellingPrice)}</span><span class="pay">${money0(q.payment)}<small>/mo est.</small></span>`
+            : '<span class="cfp">Call for Price</span><span></span>'}
+      </div>
+      ${extra}
     </div>
-    ${extra}
   </a>`;
 }
 
@@ -223,8 +226,13 @@ function renderVehicle(stock, params) {
     <div class="quote-layout">
       <div class="quote-main">
         <div class="card vhead">
-          <h1>${esc(v.name)}</h1>
-          <div class="sub">${badges(v)} ${esc(v.body ?? '')} · Stock ${esc(v.stock)}</div>
+          <div class="vhead-top">
+            ${vehiclePhotoHtml(v, { className: 'vphoto', eager: true })}
+            <div class="vhead-title">
+              <h1>${esc(v.name)}</h1>
+              <div class="sub">${badges(v)} ${esc(v.body ?? '')} · Stock ${esc(v.stock)}</div>
+            </div>
+          </div>
           <dl class="specs">
             <dt>Exterior</dt><dd>${esc(v.color ?? '—')}</dd>
             <dt>Interior</dt><dd>${esc(v.interiorColor ?? '—')}</dd>

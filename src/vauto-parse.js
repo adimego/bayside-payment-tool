@@ -73,7 +73,23 @@ const HEADER_MAP = {
   'color': 'color', 'exterior color': 'color',
   'interior color': 'interiorColor',
   'price': 'price',
+  'photo': 'photo', 'photo url': 'photo', 'photo thumbnail': 'photo', 'photo thumbnail url': 'photo',
+  'primary photo': 'photo', 'primary photo url': 'photo', 'image url': 'photo', 'thumbnail': 'photo',
 };
+
+/**
+ * Photo column value -> safe image URL, or null. Accepts https URLs (vAuto
+ * photo links) and repo-relative thumbs (assets/thumbs/STOCK.jpg, written by
+ * scripts/extract-pdf-thumbs.py). Anything else is dropped.
+ */
+export function cleanPhotoUrl(v) {
+  const s = clean(v);
+  if (!s) return null;
+  if (/^https:\/\/[^\s"'<>]+$/i.test(s)) return s;
+  if (/^http:\/\/[^\s"'<>]+$/i.test(s)) return 'https://' + s.slice(7);
+  if (/^assets\/thumbs\/[A-Za-z0-9_-]+\.(jpe?g|png|webp)$/i.test(s)) return s;
+  return null;
+}
 
 function headerKey(h) {
   return String(h ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
@@ -107,6 +123,7 @@ export function normalizeVautoRows(rows) {
     if (!type) warnings.push(`${stock}: unknown body "${body}"`);
     const price = toNumber(raw.price);
     const condition = String(clean(raw.newUsed) ?? '').toUpperCase().startsWith('U') ? 'Used' : 'New';
+    const photo = cleanPhotoUrl(raw.photo);
     vehicles.push({
       stock,
       vin: clean(raw.vin),
@@ -120,6 +137,7 @@ export function normalizeVautoRows(rows) {
       color: clean(raw.color),
       interiorColor: clean(raw.interiorColor),
       price: price && price > 0 ? price : null, // null -> Call for Price
+      ...(photo ? { photo } : {}),
     });
   }
   return { vehicles, warnings };

@@ -86,7 +86,8 @@
       "type": "SUV",
       "color": "Bright White Clearcoat",
       "interiorColor": "Black",
-      "price": 20005
+      "price": 20005,
+      "photo": "assets/thumbs/ST508330A.jpg"
     },
     {
       "stock": "ES116688A",
@@ -103,7 +104,8 @@
       "type": "Truck",
       "color": "Black Clearcoat",
       "interiorColor": "Diesel Gray/Black",
-      "price": 18005
+      "price": 18005,
+      "photo": "assets/thumbs/ES116688A.jpg"
     },
     {
       "stock": "PC548900",
@@ -137,7 +139,8 @@
       "type": "SUV",
       "color": "Bright White Clearcoat",
       "interiorColor": "Global Black",
-      "price": 26885
+      "price": 26885,
+      "photo": "assets/thumbs/P8850823.jpg"
     },
     {
       "stock": "P8710569",
@@ -154,7 +157,8 @@
       "type": "SUV",
       "color": "Baltic Gray Metallic Clearcoat",
       "interiorColor": "Global Black",
-      "price": 31005
+      "price": 31005,
+      "photo": "assets/thumbs/P8710569.jpg"
     },
     {
       "stock": "P8770234",
@@ -171,7 +175,8 @@
       "type": "SUV",
       "color": "Bright White Clearcoat",
       "interiorColor": "Wicker Beige/Black",
-      "price": 28505
+      "price": 28505,
+      "photo": "assets/thumbs/P8770234.jpg"
     },
     {
       "stock": "N8534914",
@@ -188,7 +193,8 @@
       "type": "SUV",
       "color": "Baltic Gray Metallic Clearcoat",
       "interiorColor": "Black",
-      "price": 24505
+      "price": 24505,
+      "photo": "assets/thumbs/N8534914.jpg"
     },
     {
       "stock": "MN576280",
@@ -239,7 +245,8 @@
       "type": "SUV",
       "color": "Pure White",
       "interiorColor": "Titan Black",
-      "price": 13995
+      "price": 13995,
+      "photo": "assets/thumbs/NM083089.jpg"
     },
     {
       "stock": "VW574604A",
@@ -256,7 +263,8 @@
       "type": "SUV",
       "color": "Bright White Clearcoat",
       "interiorColor": "Black",
-      "price": 55005
+      "price": 55005,
+      "photo": "assets/thumbs/VW574604A.jpg"
     },
     {
       "stock": "MR586653",
@@ -273,7 +281,8 @@
       "type": "Van",
       "color": "Maximum Steel Metallic Clearcoat",
       "interiorColor": "Black",
-      "price": 20995
+      "price": 20995,
+      "photo": "assets/thumbs/MR586653.jpg"
     },
     {
       "stock": "N8592451",
@@ -324,7 +333,8 @@
       "type": "Truck",
       "color": "Black",
       "interiorColor": "Black",
-      "price": 48255
+      "price": 48255,
+      "photo": "assets/thumbs/R1101980B.jpg"
     },
     {
       "stock": "TC126642",
@@ -341,7 +351,8 @@
       "type": "SUV",
       "color": "Aurora Blue/Super Black",
       "interiorColor": "Gray",
-      "price": 36005
+      "price": 36005,
+      "photo": "assets/thumbs/TC126642.jpg"
     },
     {
       "stock": "VG391661",
@@ -358,7 +369,8 @@
       "type": "Truck",
       "color": "Diamond Black Crystal Pearlcoat",
       "interiorColor": "Diesel Gray/Black",
-      "price": 67005
+      "price": 67005,
+      "photo": "assets/thumbs/VG391661.jpg"
     },
     {
       "stock": "NC557574",
@@ -375,7 +387,8 @@
       "type": "SUV",
       "color": "Green",
       "interiorColor": null,
-      "price": 22505
+      "price": 22505,
+      "photo": "assets/thumbs/NC557574.jpg"
     },
     {
       "stock": "LT216588",
@@ -409,7 +422,8 @@
       "type": "SUV",
       "color": "Midnight Black Metallic",
       "interiorColor": "Graphite",
-      "price": 56505
+      "price": 56505,
+      "photo": "assets/thumbs/TS2722131.jpg"
     },
     {
       "stock": "VT554015",
@@ -426,7 +440,8 @@
       "type": "SUV",
       "color": "Bright White Clearcoat",
       "interiorColor": "Black",
-      "price": 38005
+      "price": 38005,
+      "photo": "assets/thumbs/VT554015.jpg"
     },
     {
       "stock": "JG394594",
@@ -443,7 +458,8 @@
       "type": "Truck",
       "color": "Granite Crystal Metallic Clearcoat",
       "interiorColor": "Black",
-      "price": 33005
+      "price": 33005,
+      "photo": "assets/thumbs/JG394594.jpg"
     },
     {
       "stock": "VW587484",
@@ -460,7 +476,8 @@
       "type": "SUV",
       "color": "Granite Crystal Metallic Clearcoat",
       "interiorColor": "Black",
-      "price": 51505
+      "price": 51505,
+      "photo": "assets/thumbs/VW587484.jpg"
     },
     {
       "stock": "VW588220",
@@ -477,7 +494,8 @@
       "type": "SUV",
       "color": "41",
       "interiorColor": "Black",
-      "price": 38505
+      "price": 38505,
+      "photo": "assets/thumbs/VW588220.jpg"
     },
     {
       "stock": "VW587483",
@@ -494,7 +512,8 @@
       "type": "SUV",
       "color": "Bright White Clearcoat",
       "interiorColor": "Black",
-      "price": 52505
+      "price": 52505,
+      "photo": "assets/thumbs/VW587483.jpg"
     },
     {
       "stock": "MB114383",
@@ -511,7 +530,8 @@
       "type": "SUV",
       "color": "Satin Steel Gray Metallic",
       "interiorColor": "Whisper Beige With Ebony Interior Accents",
-      "price": 10755
+      "price": 10755,
+      "photo": "assets/thumbs/MB114383.jpg"
     },
     {
       "stock": "VG394317",
@@ -528,7 +548,8 @@
       "type": "Truck",
       "color": "Molten Red Pearlcoat",
       "interiorColor": "Black",
-      "price": 65005
+      "price": 65005,
+      "photo": "assets/thumbs/VG394317.jpg"
     },
     {
       "stock": "V8168289",
@@ -545,7 +566,8 @@
       "type": "SUV",
       "color": "Copper Shino Metallic Clearcoat",
       "interiorColor": "Global Black",
-      "price": 47005
+      "price": 47005,
+      "photo": "assets/thumbs/V8168289.jpg"
     },
     {
       "stock": "VC577295",
@@ -562,7 +584,8 @@
       "type": "SUV",
       "color": "Sting-Gray Clearcoat",
       "interiorColor": "Global Black",
-      "price": 44005
+      "price": 44005,
+      "photo": "assets/thumbs/VC577295.jpg"
     },
     {
       "stock": "VR618141",
@@ -579,7 +602,8 @@
       "type": "Van",
       "color": "Hydro Blue Pearlcoat",
       "interiorColor": "Black",
-      "price": 48505
+      "price": 48505,
+      "photo": "assets/thumbs/VR618141.jpg"
     },
     {
       "stock": "VG394318",
@@ -596,7 +620,8 @@
       "type": "Truck",
       "color": "Ceramic Gray Clearcoat",
       "interiorColor": "Black",
-      "price": 65005
+      "price": 65005,
+      "photo": "assets/thumbs/VG394318.jpg"
     },
     {
       "stock": "VG400104",
@@ -613,7 +638,8 @@
       "type": "Truck",
       "color": "Ceramic Gray Clearcoat",
       "interiorColor": "Black",
-      "price": 79005
+      "price": 79005,
+      "photo": "assets/thumbs/VG400104.jpg"
     },
     {
       "stock": "VR610255",
@@ -630,7 +656,8 @@
       "type": "Car",
       "color": "Diamond Black Crystal Pearlcoat",
       "interiorColor": "Black",
-      "price": 57005
+      "price": 57005,
+      "photo": "assets/thumbs/VR610255.jpg"
     },
     {
       "stock": "VC562472A",
@@ -647,7 +674,8 @@
       "type": "SUV",
       "color": "Sting-Gray Clearcoat",
       "interiorColor": "Global Black",
-      "price": 42005
+      "price": 42005,
+      "photo": "assets/thumbs/VC562472A.jpg"
     },
     {
       "stock": "VG391071",
@@ -664,7 +692,8 @@
       "type": "Truck",
       "color": "Diamond Black Crystal Pearlcoat",
       "interiorColor": "Black",
-      "price": 68005
+      "price": 68005,
+      "photo": "assets/thumbs/VG391071.jpg"
     },
     {
       "stock": "VN580204",
@@ -681,7 +710,8 @@
       "type": "Truck",
       "color": "Tank",
       "interiorColor": "Black",
-      "price": 65505
+      "price": 65505,
+      "photo": "assets/thumbs/VN580204.jpg"
     },
     {
       "stock": "VN584440",
@@ -698,7 +728,8 @@
       "type": "Truck",
       "color": "Serrano Green Metallic",
       "interiorColor": "Sea Salt/Bison Brown",
-      "price": 64005
+      "price": 64005,
+      "photo": "assets/thumbs/VN584440.jpg"
     },
     {
       "stock": "LZ238185",
@@ -715,7 +746,8 @@
       "type": "Truck",
       "color": "Red Hot",
       "interiorColor": "Jet Black",
-      "price": 23005
+      "price": 23005,
+      "photo": "assets/thumbs/LZ238185.jpg"
     },
     {
       "stock": "V8166660",
@@ -732,7 +764,8 @@
       "type": "SUV",
       "color": "Steel Blue",
       "interiorColor": "Black",
-      "price": 49005
+      "price": 49005,
+      "photo": "assets/thumbs/V8166660.jpg"
     },
     {
       "stock": "VN605147",
@@ -749,7 +782,8 @@
       "type": "Truck",
       "color": "Serrano Green Metallic",
       "interiorColor": "Black",
-      "price": 66005
+      "price": 66005,
+      "photo": "assets/thumbs/VN605147.jpg"
     },
     {
       "stock": "MN553646",
@@ -766,7 +800,8 @@
       "type": "Truck",
       "color": "Granite Crystal Metallic Clearcoat",
       "interiorColor": "Black",
-      "price": 39255
+      "price": 39255,
+      "photo": "assets/thumbs/MN553646.jpg"
     },
     {
       "stock": "N6012333",
@@ -783,7 +818,8 @@
       "type": "SUV",
       "color": "Classic Silver Metallic",
       "interiorColor": "Graphite",
-      "price": 32555
+      "price": 32555,
+      "photo": "assets/thumbs/N6012333.jpg"
     },
     {
       "stock": "MU105378",
@@ -800,7 +836,8 @@
       "type": "SUV",
       "color": "Galactic Gray",
       "interiorColor": "Gray",
-      "price": 15735
+      "price": 15735,
+      "photo": "assets/thumbs/MU105378.jpg"
     },
     {
       "stock": "VG400111",
@@ -817,7 +854,8 @@
       "type": "Truck",
       "color": "Bright White Clearcoat",
       "interiorColor": "Black",
-      "price": 64505
+      "price": 64505,
+      "photo": "assets/thumbs/VG400111.jpg"
     },
     {
       "stock": "VC575591",
@@ -834,7 +872,8 @@
       "type": "SUV",
       "color": "High Gloss Black",
       "interiorColor": "Global Black",
-      "price": 43005
+      "price": 43005,
+      "photo": "assets/thumbs/VC575591.jpg"
     },
     {
       "stock": "R8E86516",
@@ -851,7 +890,8 @@
       "type": "Car",
       "color": "White Metallic",
       "interiorColor": "Black",
-      "price": 28745
+      "price": 28745,
+      "photo": "assets/thumbs/R8E86516.jpg"
     },
     {
       "stock": "SN577019",
@@ -868,7 +908,8 @@
       "type": "Truck",
       "color": "Delmonico Red Pearlcoat",
       "interiorColor": "Black",
-      "price": 38505
+      "price": 38505,
+      "photo": "assets/thumbs/SN577019.jpg"
     },
     {
       "stock": "VC575571",
@@ -885,7 +926,8 @@
       "type": "SUV",
       "color": "Bright White Clearcoat",
       "interiorColor": "Global Black",
-      "price": 43505
+      "price": 43505,
+      "photo": "assets/thumbs/VC575571.jpg"
     },
     {
       "stock": "VC575572",
@@ -902,7 +944,8 @@
       "type": "SUV",
       "color": "High Gloss Black",
       "interiorColor": "Global Black",
-      "price": 43505
+      "price": 43505,
+      "photo": "assets/thumbs/VC575572.jpg"
     },
     {
       "stock": "V8158907",
@@ -919,7 +962,8 @@
       "type": "SUV",
       "color": "Fathom Blue Pearlcoat",
       "interiorColor": "Tupelo/Black",
-      "price": 58005
+      "price": 58005,
+      "photo": "assets/thumbs/V8158907.jpg"
     },
     {
       "stock": "VC572974",
@@ -936,7 +980,8 @@
       "type": "SUV",
       "color": "High Gloss Black",
       "interiorColor": "Global Black",
-      "price": 43005
+      "price": 43005,
+      "photo": "assets/thumbs/VC572974.jpg"
     },
     {
       "stock": "V8165912",
@@ -953,7 +998,8 @@
       "type": "SUV",
       "color": "Steel Blue",
       "interiorColor": "Global Black",
-      "price": 45505
+      "price": 45505,
+      "photo": "assets/thumbs/V8165912.jpg"
     },
     {
       "stock": "JW137397B",
@@ -970,7 +1016,8 @@
       "type": "SUV",
       "color": "Billet Silver Metallic Clearcoat",
       "interiorColor": "Black",
-      "price": 21005
+      "price": 21005,
+      "photo": "assets/thumbs/JW137397B.jpg"
     },
     {
       "stock": "MR211116A",
@@ -987,7 +1034,8 @@
       "type": "SUV",
       "color": "Shadow Gray Metallic",
       "interiorColor": "Jet Black",
-      "price": 31325
+      "price": 31325,
+      "photo": "assets/thumbs/MR211116A.jpg"
     },
     {
       "stock": "PS561072",
@@ -1004,7 +1052,8 @@
       "type": "SUV",
       "color": "Baltic Gray Metallic Clearcoat",
       "interiorColor": "Black",
-      "price": 39005
+      "price": 39005,
+      "photo": "assets/thumbs/PS561072.jpg"
     },
     {
       "stock": "VN583366",
@@ -1021,7 +1070,8 @@
       "type": "Truck",
       "color": "Granite Crystal Metallic Clearcoat",
       "interiorColor": "Red/Black",
-      "price": 67005
+      "price": 67005,
+      "photo": "assets/thumbs/VN583366.jpg"
     },
     {
       "stock": "VN583367",
@@ -1038,7 +1088,8 @@
       "type": "Truck",
       "color": "Serrano Green Metallic",
       "interiorColor": "Black",
-      "price": 66505
+      "price": 66505,
+      "photo": "assets/thumbs/VN583367.jpg"
     },
     {
       "stock": "VR607701",
@@ -1055,7 +1106,8 @@
       "type": "Car",
       "color": "Purple Haze",
       "interiorColor": "Black",
-      "price": 67505
+      "price": 67505,
+      "photo": "assets/thumbs/VR607701.jpg"
     },
     {
       "stock": "HL107682",
@@ -1072,7 +1124,8 @@
       "type": "Car",
       "color": "Oxford White",
       "interiorColor": "Medium Light Stone",
-      "price": 12005
+      "price": 12005,
+      "photo": "assets/thumbs/HL107682.jpg"
     },
     {
       "stock": "VG391070",
@@ -1089,7 +1142,8 @@
       "type": "Truck",
       "color": "Ceramic Gray Clearcoat",
       "interiorColor": "Black",
-      "price": 82505
+      "price": 82505,
+      "photo": "assets/thumbs/VG391070.jpg"
     },
     {
       "stock": "REF55552",
@@ -1106,7 +1160,8 @@
       "type": "Truck",
       "color": "Race Red",
       "interiorColor": "Medium Dark Slate",
-      "price": 47005
+      "price": 47005,
+      "photo": "assets/thumbs/REF55552.jpg"
     },
     {
       "stock": "VC575452",
@@ -1123,7 +1178,8 @@
       "type": "SUV",
       "color": "Sting-Gray Clearcoat",
       "interiorColor": "Global Black",
-      "price": 43005
+      "price": 43005,
+      "photo": "assets/thumbs/VC575452.jpg"
     },
     {
       "stock": "VC559056",
@@ -1140,7 +1196,8 @@
       "type": "SUV",
       "color": "High Gloss Black",
       "interiorColor": "Global Black",
-      "price": 45005
+      "price": 45005,
+      "photo": "assets/thumbs/VC559056.jpg"
     },
     {
       "stock": "TN445018",
@@ -1157,7 +1214,8 @@
       "type": "Truck",
       "color": "Serrano Green Metallic",
       "interiorColor": "Black",
-      "price": 49005
+      "price": 49005,
+      "photo": "assets/thumbs/TN445018.jpg"
     },
     {
       "stock": "VG367607",
@@ -1174,7 +1232,8 @@
       "type": "Truck",
       "color": "Molten Red Pearlcoat",
       "interiorColor": "Black",
-      "price": 68005
+      "price": 68005,
+      "photo": "assets/thumbs/VG367607.jpg"
     },
     {
       "stock": "V8165911",
@@ -1191,7 +1250,8 @@
       "type": "SUV",
       "color": "Fathom Blue Pearlcoat",
       "interiorColor": "Global Black",
-      "price": 44005
+      "price": 44005,
+      "photo": "assets/thumbs/V8165911.jpg"
     },
     {
       "stock": "V8155803",
@@ -1208,7 +1268,8 @@
       "type": "SUV",
       "color": "Fathom Blue Pearlcoat",
       "interiorColor": "Global Black",
-      "price": 58005
+      "price": 58005,
+      "photo": "assets/thumbs/V8155803.jpg"
     },
     {
       "stock": "T4209801",
@@ -1225,7 +1286,8 @@
       "type": "Truck",
       "color": "Diamond Black Crystal Pearlcoat",
       "interiorColor": "Black",
-      "price": 47005
+      "price": 47005,
+      "photo": "assets/thumbs/T4209801.jpg"
     },
     {
       "stock": "VN556977",
@@ -1242,7 +1304,8 @@
       "type": "Truck",
       "color": "Serrano Green Metallic",
       "interiorColor": "Black",
-      "price": 48405
+      "price": 48405,
+      "photo": "assets/thumbs/VN556977.jpg"
     },
     {
       "stock": "VN584441",
@@ -1259,7 +1322,8 @@
       "type": "Truck",
       "color": "Bright White Clearcoat",
       "interiorColor": "Sea Salt/Bison Brown",
-      "price": 60505
+      "price": 60505,
+      "photo": "assets/thumbs/VN584441.jpg"
     },
     {
       "stock": "VR604334",
@@ -1276,7 +1340,8 @@
       "type": "Van",
       "color": "Olive Green Pearlcoat",
       "interiorColor": "Black",
-      "price": 45005
+      "price": 45005,
+      "photo": "assets/thumbs/VR604334.jpg"
     },
     {
       "stock": "NA044487",
@@ -1293,7 +1358,8 @@
       "type": "Car",
       "color": "Still Night Pearl",
       "interiorColor": "Black",
-      "price": 19005
+      "price": 19005,
+      "photo": "assets/thumbs/NA044487.jpg"
     },
     {
       "stock": "VW571747",
@@ -1310,7 +1376,8 @@
       "type": "SUV",
       "color": "Earl Clearcoat (DISC)",
       "interiorColor": "Black",
-      "price": 41005
+      "price": 41005,
+      "photo": "assets/thumbs/VW571747.jpg"
     },
     {
       "stock": "VW571748",
@@ -1327,7 +1394,8 @@
       "type": "SUV",
       "color": "Hydro Blue Pearl Coat",
       "interiorColor": "Black",
-      "price": 41005
+      "price": 41005,
+      "photo": "assets/thumbs/VW571748.jpg"
     },
     {
       "stock": "TW333692",
@@ -1344,7 +1412,8 @@
       "type": "SUV",
       "color": "Bright White Clearcoat",
       "interiorColor": "Black",
-      "price": 46005
+      "price": 46005,
+      "photo": "assets/thumbs/TW333692.jpg"
     },
     {
       "stock": "TW317210",
@@ -1361,7 +1430,8 @@
       "type": "SUV",
       "color": "Anvil Clear Coat",
       "interiorColor": "Black",
-      "price": 45505
+      "price": 45505,
+      "photo": "assets/thumbs/TW317210.jpg"
     },
     {
       "stock": "TW334946",
@@ -1378,7 +1448,8 @@
       "type": "SUV",
       "color": "Tuscadero Pearlcoat",
       "interiorColor": "Black",
-      "price": 54555
+      "price": 54555,
+      "photo": "assets/thumbs/TW334946.jpg"
     },
     {
       "stock": "SM012255",
@@ -1395,7 +1466,8 @@
       "type": "SUV",
       "color": "Monument Gray",
       "interiorColor": "Black",
-      "price": 21005
+      "price": 21005,
+      "photo": "assets/thumbs/SM012255.jpg"
     },
     {
       "stock": "NM094402",
@@ -1412,7 +1484,8 @@
       "type": "SUV",
       "color": "Pure White",
       "interiorColor": "Titan Black",
-      "price": 20005
+      "price": 20005,
+      "photo": "assets/thumbs/NM094402.jpg"
     },
     {
       "stock": "VC555402",
@@ -1429,7 +1502,8 @@
       "type": "SUV",
       "color": "Sting-Gray Clearcoat",
       "interiorColor": "Global Black",
-      "price": 44505
+      "price": 44505,
+      "photo": "assets/thumbs/VC555402.jpg"
     },
     {
       "stock": "VC564529",
@@ -1446,7 +1520,8 @@
       "type": "SUV",
       "color": "Sting-Gray Clearcoat",
       "interiorColor": "Global Black",
-      "price": 49005
+      "price": 49005,
+      "photo": "assets/thumbs/VC564529.jpg"
     },
     {
       "stock": "VN556978",
@@ -1463,7 +1538,8 @@
       "type": "Truck",
       "color": "Diamond Black Crystal Pearlcoat",
       "interiorColor": "Black",
-      "price": 50005
+      "price": 50005,
+      "photo": "assets/thumbs/VN556978.jpg"
     },
     {
       "stock": "TN436172",
@@ -1480,7 +1556,8 @@
       "type": "Truck",
       "color": "Serrano Green Metallic",
       "interiorColor": "Black",
-      "price": 47555
+      "price": 47555,
+      "photo": "assets/thumbs/TN436172.jpg"
     },
     {
       "stock": "TC228121",
@@ -1497,7 +1574,8 @@
       "type": "SUV",
       "color": "Bright White Clearcoat",
       "interiorColor": "Global Black",
-      "price": 38755
+      "price": 38755,
+      "photo": "assets/thumbs/TC228121.jpg"
     },
     {
       "stock": "TC167219",
@@ -1514,7 +1592,8 @@
       "type": "SUV",
       "color": "White Knuckle Clearcoat",
       "interiorColor": "Black",
-      "price": 29005
+      "price": 29005,
+      "photo": "assets/thumbs/TC167219.jpg"
     },
     {
       "stock": "T8568887A",
@@ -1531,7 +1610,8 @@
       "type": "SUV",
       "color": "Steel Blue",
       "interiorColor": "Black",
-      "price": 44005
+      "price": 44005,
+      "photo": "assets/thumbs/T8568887A.jpg"
     },
     {
       "stock": "MW869038",
@@ -1548,7 +1628,8 @@
       "type": "SUV",
       "color": "Hydro Blue Pearl Coat",
       "interiorColor": "Black",
-      "price": 22205
+      "price": 22205,
+      "photo": "assets/thumbs/MW869038.jpg"
     },
     {
       "stock": "VR589071",
@@ -1565,7 +1646,8 @@
       "type": "Car",
       "color": "Diamond Black Crystal Pearlcoat",
       "interiorColor": "Black",
-      "price": 57005
+      "price": 57005,
+      "photo": "assets/thumbs/VR589071.jpg"
     },
     {
       "stock": "NC206650",
@@ -1582,7 +1664,8 @@
       "type": "SUV",
       "color": "Super Black",
       "interiorColor": "Light Gray",
-      "price": 15755
+      "price": 15755,
+      "photo": "assets/thumbs/NC206650.jpg"
     },
     {
       "stock": "VN560208",
@@ -1599,7 +1682,8 @@
       "type": "Truck",
       "color": "Forged Blue Metallic",
       "interiorColor": "Black",
-      "price": 53005
+      "price": 53005,
+      "photo": "assets/thumbs/VN560208.jpg"
     },
     {
       "stock": "VR589058",
@@ -1616,7 +1700,8 @@
       "type": "Car",
       "color": "Diamond Black Crystal Pearlcoat",
       "interiorColor": "Black",
-      "price": 50005
+      "price": 50005,
+      "photo": "assets/thumbs/VR589058.jpg"
     },
     {
       "stock": "TN404014",
@@ -1633,7 +1718,8 @@
       "type": "Truck",
       "color": "Bright White Clearcoat",
       "interiorColor": "Black",
-      "price": 46005
+      "price": 46005,
+      "photo": "assets/thumbs/TN404014.jpg"
     },
     {
       "stock": "T4188998",
@@ -1650,7 +1736,8 @@
       "type": "Truck",
       "color": "Bright White Clearcoat",
       "interiorColor": "Black",
-      "price": 43775
+      "price": 43775,
+      "photo": "assets/thumbs/T4188998.jpg"
     },
     {
       "stock": "TW330179",
@@ -1667,7 +1754,8 @@
       "type": "SUV",
       "color": "Bright White Clearcoat",
       "interiorColor": "Black",
-      "price": 45005
+      "price": 45005,
+      "photo": "assets/thumbs/TW330179.jpg"
     },
     {
       "stock": "TL191110",
@@ -1684,7 +1772,8 @@
       "type": "Truck",
       "color": "Bright White Clearcoat",
       "interiorColor": "Black",
-      "price": 51505
+      "price": 51505,
+      "photo": "assets/thumbs/TL191110.jpg"
     },
     {
       "stock": "SW657046",
@@ -1701,7 +1790,8 @@
       "type": "SUV",
       "color": "Anvil Clear Coat",
       "interiorColor": "Black",
-      "price": 32755
+      "price": 32755,
+      "photo": "assets/thumbs/SW657046.jpg"
     },
     {
       "stock": "TT173979",
@@ -1718,7 +1808,8 @@
       "type": "SUV",
       "color": "Joose (DISC)",
       "interiorColor": "Black",
-      "price": 24755
+      "price": 24755,
+      "photo": "assets/thumbs/TT173979.jpg"
     },
     {
       "stock": "TN404018",
@@ -1735,7 +1826,8 @@
       "type": "Truck",
       "color": "Serrano Green Metallic",
       "interiorColor": "Black",
-      "price": 49505
+      "price": 49505,
+      "photo": "assets/thumbs/TN404018.jpg"
     },
     {
       "stock": "TS191398",
@@ -1752,7 +1844,8 @@
       "type": "SUV",
       "color": "Velvet Red Pearlcoat (DISC)",
       "interiorColor": "Black",
-      "price": 70005
+      "price": 70005,
+      "photo": "assets/thumbs/TS191398.jpg"
     },
     {
       "stock": "TC297351",
@@ -1769,7 +1862,8 @@
       "type": "SUV",
       "color": "White Knuckle Clearcoat",
       "interiorColor": "Red/Black/Ebony",
-      "price": 44005
+      "price": 44005,
+      "photo": "assets/thumbs/TC297351.jpg"
     },
     {
       "stock": "TS197424",
@@ -1786,7 +1880,8 @@
       "type": "SUV",
       "color": "High Gloss Black",
       "interiorColor": "Black",
-      "price": 94505
+      "price": 94505,
+      "photo": "assets/thumbs/TS197424.jpg"
     },
     {
       "stock": "VR584739",
@@ -1803,7 +1898,8 @@
       "type": "Van",
       "color": "Bright White Clearcoat",
       "interiorColor": "Black",
-      "price": 41005
+      "price": 41005,
+      "photo": "assets/thumbs/VR584739.jpg"
     },
     {
       "stock": "TT284209",
@@ -1820,7 +1916,8 @@
       "type": "SUV",
       "color": "Diamond Black Crystal Pearlcoat",
       "interiorColor": "Black",
-      "price": 29005
+      "price": 29005,
+      "photo": "assets/thumbs/TT284209.jpg"
     },
     {
       "stock": "TC314245",
@@ -1837,7 +1934,8 @@
       "type": "SUV",
       "color": "Destroyer Gray Clearcoat",
       "interiorColor": "Black",
-      "price": 46505
+      "price": 46505,
+      "photo": "assets/thumbs/TC314245.jpg"
     },
     {
       "stock": "LC238077",
@@ -1854,7 +1952,8 @@
       "type": "SUV",
       "color": "Billet Silver Metallic Clearcoat",
       "interiorColor": "Black",
-      "price": 20005
+      "price": 20005,
+      "photo": "assets/thumbs/LC238077.jpg"
     },
     {
       "stock": "GL146775",
@@ -1871,7 +1970,8 @@
       "type": "SUV",
       "color": "Black Clearcoat",
       "interiorColor": "Black",
-      "price": 20005
+      "price": 20005,
+      "photo": "assets/thumbs/GL146775.jpg"
     },
     {
       "stock": "TC214619",
@@ -1888,7 +1988,8 @@
       "type": "SUV",
       "color": "Diamond Black Crystal Pearlcoat",
       "interiorColor": "Global Black",
-      "price": 36755
+      "price": 36755,
+      "photo": "assets/thumbs/TC214619.jpg"
     },
     {
       "stock": "TC273068",
@@ -1905,7 +2006,8 @@
       "type": "SUV",
       "color": "B5 Blue",
       "interiorColor": "Black",
-      "price": 40505
+      "price": 40505,
+      "photo": "assets/thumbs/TC273068.jpg"
     },
     {
       "stock": "TT273536",
@@ -1922,7 +2024,8 @@
       "type": "SUV",
       "color": "Diamond Black Crystal Pearlcoat",
       "interiorColor": "Global Black",
-      "price": 37005
+      "price": 37005,
+      "photo": "assets/thumbs/TT273536.jpg"
     },
     {
       "stock": "T4184154",
@@ -1939,7 +2042,8 @@
       "type": "Truck",
       "color": "Forged Blue Metallic",
       "interiorColor": "Black",
-      "price": 47005
+      "price": 47005,
+      "photo": "assets/thumbs/T4184154.jpg"
     },
     {
       "stock": "TG332651",
@@ -1956,7 +2060,8 @@
       "type": "Truck",
       "color": "Diamond Black Crystal Pearlcoat",
       "interiorColor": "Black",
-      "price": 68705
+      "price": 68705,
+      "photo": "assets/thumbs/TG332651.jpg"
     },
     {
       "stock": "T4184153",
@@ -1973,7 +2078,8 @@
       "type": "Truck",
       "color": "Forged Blue Metallic",
       "interiorColor": "Black",
-      "price": 49005
+      "price": 49005,
+      "photo": "assets/thumbs/T4184153.jpg"
     },
     {
       "stock": "TG309149",
@@ -1990,7 +2096,8 @@
       "type": "Truck",
       "color": "Bright White Clearcoat",
       "interiorColor": "Diesel Gray/Black",
-      "price": 54005
+      "price": 54005,
+      "photo": "assets/thumbs/TG309149.jpg"
     },
     {
       "stock": "TN269304",
@@ -2007,7 +2114,8 @@
       "type": "Truck",
       "color": "Diamond Black Crystal Pearlcoat",
       "interiorColor": "Black",
-      "price": 65005
+      "price": 65005,
+      "photo": "assets/thumbs/TN269304.jpg"
     },
     {
       "stock": "TN382156",
@@ -2024,7 +2132,8 @@
       "type": "Truck",
       "color": "Molten Red Pearlcoat",
       "interiorColor": "Black",
-      "price": 48005
+      "price": 48005,
+      "photo": "assets/thumbs/TN382156.jpg"
     },
     {
       "stock": "TR288233",
@@ -2041,7 +2150,8 @@
       "type": "Car",
       "color": "Sub-Zero",
       "interiorColor": "Black",
-      "price": 50005
+      "price": 50005,
+      "photo": "assets/thumbs/TR288233.jpg"
     },
     {
       "stock": "VR558200",
@@ -2058,7 +2168,8 @@
       "type": "Van",
       "color": "Diamond Black",
       "interiorColor": "Black",
-      "price": 42005
+      "price": 42005,
+      "photo": "assets/thumbs/VR558200.jpg"
     },
     {
       "stock": "TT264623",
@@ -2075,7 +2186,8 @@
       "type": "SUV",
       "color": "Bright White Clearcoat",
       "interiorColor": "Black",
-      "price": 34005
+      "price": 34005,
+      "photo": "assets/thumbs/TT264623.jpg"
     },
     {
       "stock": "T4174964",
@@ -2092,7 +2204,8 @@
       "type": "Truck",
       "color": "Bright White Clearcoat",
       "interiorColor": "Black",
-      "price": 47505
+      "price": 47505,
+      "photo": "assets/thumbs/T4174964.jpg"
     },
     {
       "stock": "T4174965",
@@ -2109,7 +2222,8 @@
       "type": "Truck",
       "color": "Granite Crystal Metallic Clearcoat",
       "interiorColor": "Black",
-      "price": 48505
+      "price": 48505,
+      "photo": "assets/thumbs/T4174965.jpg"
     },
     {
       "stock": "VR558201",
@@ -2126,7 +2240,8 @@
       "type": "Van",
       "color": "Diamond Black Crystal Pearlcoat",
       "interiorColor": "Black",
-      "price": 44005
+      "price": 44005,
+      "photo": "assets/thumbs/VR558201.jpg"
     },
     {
       "stock": "SC266859",
@@ -2143,7 +2258,8 @@
       "type": "SUV",
       "color": "Velvet Red Pearlcoat",
       "interiorColor": "Black",
-      "price": 25745
+      "price": 25745,
+      "photo": "assets/thumbs/SC266859.jpg"
     },
     {
       "stock": "TW209642A",
@@ -2160,7 +2276,8 @@
       "type": "SUV",
       "color": "Black Clearcoat",
       "interiorColor": "Black",
-      "price": 45505
+      "price": 45505,
+      "photo": "assets/thumbs/TW209642A.jpg"
     },
     {
       "stock": "LN244080",
@@ -2177,7 +2294,8 @@
       "type": "Truck",
       "color": "Bright White Clearcoat",
       "interiorColor": "Black",
-      "price": 29785
+      "price": 29785,
+      "photo": "assets/thumbs/LN244080.jpg"
     },
     {
       "stock": "TN382157",
@@ -2194,7 +2312,8 @@
       "type": "Truck",
       "color": "Serrano Green Metallic",
       "interiorColor": "Black",
-      "price": 47505
+      "price": 47505,
+      "photo": "assets/thumbs/TN382157.jpg"
     },
     {
       "stock": "T8563466",
@@ -2211,7 +2330,8 @@
       "type": "SUV",
       "color": "Diamond Black Crystal Pearlcoat",
       "interiorColor": "Global Black",
-      "price": 42005
+      "price": 42005,
+      "photo": "assets/thumbs/T8563466.jpg"
     },
     {
       "stock": "TR280103",
@@ -2228,7 +2348,8 @@
       "type": "Car",
       "color": "Sub-Zero",
       "interiorColor": "Black",
-      "price": 48505
+      "price": 48505,
+      "photo": "assets/thumbs/TR280103.jpg"
     },
     {
       "stock": "NL255402",
@@ -2245,7 +2366,8 @@
       "type": "SUV",
       "color": "Ebony Twilight Metallic",
       "interiorColor": "Jet Black",
-      "price": 21605
+      "price": 21605,
+      "photo": "assets/thumbs/NL255402.jpg"
     },
     {
       "stock": "T8564687",
@@ -2262,7 +2384,8 @@
       "type": "SUV",
       "color": "Silver Zynith",
       "interiorColor": "Global Black",
-      "price": 42005
+      "price": 42005,
+      "photo": "assets/thumbs/T8564687.jpg"
     },
     {
       "stock": "T8563467",
@@ -2279,7 +2402,8 @@
       "type": "SUV",
       "color": "Velvet Red Pearlcoat",
       "interiorColor": "Global Black",
-      "price": 40005
+      "price": 40005,
+      "photo": "assets/thumbs/T8563467.jpg"
     },
     {
       "stock": "TT211165",
@@ -2296,7 +2420,8 @@
       "type": "SUV",
       "color": "Diamond Black Crystal Pearlcoat",
       "interiorColor": "Black",
-      "price": 30505
+      "price": 30505,
+      "photo": "assets/thumbs/TT211165.jpg"
     },
     {
       "stock": "TR266134",
@@ -2313,7 +2438,8 @@
       "type": "Van",
       "color": "Bright White Clearcoat",
       "interiorColor": "Black",
-      "price": 37695
+      "price": 37695,
+      "photo": "assets/thumbs/TR266134.jpg"
     },
     {
       "stock": "TR245894",
@@ -2330,7 +2456,8 @@
       "type": "Car",
       "color": "After Dark",
       "interiorColor": "Black",
-      "price": 49205
+      "price": 49205,
+      "photo": "assets/thumbs/TR245894.jpg"
     },
     {
       "stock": "TW266694",
@@ -2347,7 +2474,8 @@
       "type": "SUV",
       "color": "Black Clearcoat",
       "interiorColor": "Black",
-      "price": 34005
+      "price": 34005,
+      "photo": "assets/thumbs/TW266694.jpg"
     },
     {
       "stock": "TC173478",
@@ -2364,7 +2492,8 @@
       "type": "SUV",
       "color": "Vapor Gray",
       "interiorColor": "Black",
-      "price": 43505
+      "price": 43505,
+      "photo": "assets/thumbs/TC173478.jpg"
     },
     {
       "stock": "TN281244",
@@ -2381,7 +2510,8 @@
       "type": "Truck",
       "color": "Forged Blue Metallic",
       "interiorColor": "Black",
-      "price": 49005
+      "price": 49005,
+      "photo": "assets/thumbs/TN281244.jpg"
     },
     {
       "stock": "TW223820",
@@ -2398,7 +2528,8 @@
       "type": "SUV",
       "color": "Black Clearcoat",
       "interiorColor": "Black",
-      "price": 37005
+      "price": 37005,
+      "photo": "assets/thumbs/TW223820.jpg"
     },
     {
       "stock": "TL152869A",
@@ -2415,7 +2546,8 @@
       "type": "Truck",
       "color": "black clearcoat",
       "interiorColor": "Black",
-      "price": 41505
+      "price": 41505,
+      "photo": "assets/thumbs/TL152869A.jpg"
     },
     {
       "stock": "TL158116",
@@ -2432,7 +2564,8 @@
       "type": "Truck",
       "color": "Reign",
       "interiorColor": "Black",
-      "price": 40505
+      "price": 40505,
+      "photo": "assets/thumbs/TL158116.jpg"
     },
     {
       "stock": "TN235727",
@@ -2449,7 +2582,8 @@
       "type": "Truck",
       "color": "Billet Silver Metallic Clearcoat",
       "interiorColor": "Black",
-      "price": 48005
+      "price": 48005,
+      "photo": "assets/thumbs/TN235727.jpg"
     }
   ]
 }
