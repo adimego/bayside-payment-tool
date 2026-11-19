@@ -6,6 +6,7 @@ Out-the-door quotes and monthly payment estimates on in-stock vehicles at
 Live site: https://adimego.github.io/bayside-payment-tool/
 
 Mobile-first and static (plain HTML, CSS and JavaScript modules, no build step), hosted on GitHub Pages.
+Pages serves the `gh-pages` branch. Work goes to `main`, and the GitHub Actions workflow copies `main` to `gh-pages` after the tests pass, so only tested code goes live.
 This is **phase 1**. It covers the quote math, inventory search, vehicle quote pages, similar vehicles, and a rule-based
 "find by monthly payment" tool, all running on the sample vAuto report. The back end, staff features and AI come in later phases (see below).
 
@@ -75,7 +76,7 @@ scripts/import-vauto.mjs  report (.xlsx/.csv) → data/inventory.json
 scripts/lib/xlsx.mjs    tiny dependency-free .xlsx reader
 data/inventory.json     current inventory (from the Nov 19, 2026 sample report)
 tests/                  node --test unit tests (+ sample report fixture)
-.github/workflows/test.yml  runs the tests on every push and PR
+.github/workflows/test.yml  runs the tests on every push and PR, then publishes main to gh-pages
 ```
 
 ## Run locally
