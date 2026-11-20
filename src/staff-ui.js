@@ -17,10 +17,10 @@ import {
   adminListQuotes,
   adminSetStatus,
   adminDeactivate,
-} from './staff.js';
-import { vehiclePhotoHtml } from './inventory.js';
-import { sharedQuoteUrl, customerFirstName, dealParamsFromSnapshot, formatSavedDate } from './share.js';
-import { LINKS } from './quote.js';
+} from './staff.js?v=d95aa26';
+import { vehiclePhotoHtml } from './inventory.js?v=d95aa26';
+import { sharedQuoteUrl, customerFirstName, dealParamsFromSnapshot, formatSavedDate } from './share.js?v=d95aa26';
+import { LINKS } from './quote.js?v=d95aa26';
 
 const money = (n) => Number(n || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

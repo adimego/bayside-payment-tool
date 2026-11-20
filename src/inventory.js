@@ -1,6 +1,6 @@
 // Inventory helpers: website links, similar vehicles, payment-goal finder.
-import { buildQuote, maxVautoPriceForPayment } from './quote.js';
-import { cleanPhotoUrl } from './vauto-parse.js';
+import { buildQuote, maxVautoPriceForPayment } from './quote.js?v=d95aa26';
+import { cleanPhotoUrl } from './vauto-parse.js?v=d95aa26';
 
 export const SITE = 'https://www.baysidecdjrva.com';
 

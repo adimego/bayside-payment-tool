@@ -1,14 +1,14 @@
 // Bayside payment tool UI (phase 1: static, reads data/inventory.json).
-import { buildQuote, TIERS, TERMS, LINKS, DISCLAIMERS, PROCESSING_FEE, REGISTRATION, TAX_RATE, MILITARY_REBATE, isUsedVehicle, maxTermForYear, clampTerm, termCapNote } from './quote.js';
-import { setTaxTable, lookupJurisdiction, zipHint, applyZipToDeal, applyTaxPercentToDeal, formatTaxInputPct } from './tax.js';
-import { websiteUrl, similarVehicles, findByPaymentGoal, searchInventory, vehiclePhotoHtml } from './inventory.js';
-import { VEHICLE_TYPES } from './vauto-parse.js';
-import { rankSuggestions } from './ai-hook.js';
-import { initStaffAuth, onStaffChange, isApprovedStaff } from './staff.js';
-import { renderStaff, renderAdmin, renderSharedQuote, bindSaveQuote, updateStaffNav } from './staff-ui.js';
-import { parseShareSlug } from './share.js';
-import { DOWN_CHIPS, normalizeDown, dealSummary, shopHintText } from './deal.js';
-import { initChat } from './chat-ui.js';
+import { buildQuote, TIERS, TERMS, LINKS, DISCLAIMERS, PROCESSING_FEE, REGISTRATION, TAX_RATE, MILITARY_REBATE, isUsedVehicle, maxTermForYear, clampTerm, termCapNote } from './quote.js?v=d95aa26';
+import { setTaxTable, lookupJurisdiction, zipHint, applyZipToDeal, applyTaxPercentToDeal, formatTaxInputPct } from './tax.js?v=d95aa26';
+import { websiteUrl, similarVehicles, findByPaymentGoal, searchInventory, vehiclePhotoHtml } from './inventory.js?v=d95aa26';
+import { VEHICLE_TYPES } from './vauto-parse.js?v=d95aa26';
+import { rankSuggestions } from './ai-hook.js?v=d95aa26';
+import { initStaffAuth, onStaffChange, isApprovedStaff } from './staff.js?v=d95aa26';
+import { renderStaff, renderAdmin, renderSharedQuote, bindSaveQuote, updateStaffNav } from './staff-ui.js?v=d95aa26';
+import { parseShareSlug } from './share.js?v=d95aa26';
+import { DOWN_CHIPS, normalizeDown, dealSummary, shopHintText } from './deal.js?v=d95aa26';
+import { initChat } from './chat-ui.js?v=d95aa26';
 
 const app = document.getElementById('app');
 let inventory = [];

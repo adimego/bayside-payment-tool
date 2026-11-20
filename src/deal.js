@@ -1,7 +1,7 @@
 // Pure helpers for the shop page's quick deal controls (credit, down, term, ZIP).
 // No DOM access so they run in Node tests too.
-import { TIERS, TERMS } from './quote.js';
-import { formatTaxPct } from './tax.js';
+import { TIERS, TERMS } from './quote.js?v=d95aa26';
+import { formatTaxPct } from './tax.js?v=d95aa26';
 
 /** Quick-pick down payment chips on the shop page. */
 export const DOWN_CHIPS = [0, 1000, 2500, 5000];
