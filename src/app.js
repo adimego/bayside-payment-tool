@@ -8,6 +8,7 @@ import { initStaffAuth, onStaffChange, isApprovedStaff } from './staff.js';
 import { renderStaff, renderAdmin, renderSharedQuote, bindSaveQuote, updateStaffNav } from './staff-ui.js';
 import { parseShareSlug } from './share.js';
 import { DOWN_CHIPS, normalizeDown, dealSummary, shopHintText } from './deal.js';
+import { initChat } from './chat-ui.js';
 
 const app = document.getElementById('app');
 let inventory = [];
@@ -526,5 +527,13 @@ async function start() {
   }
   lastPath = location.hash.split('?')[0];
   route();
+  initChat({
+    getInventory: () => inventory,
+    setDeal: (d) => {
+      deal = { ...DEFAULT_DEAL, ...d };
+      saveDeal();
+      if (quickDealSync) quickDealSync();
+    },
+  });
 }
 start();

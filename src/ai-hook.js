@@ -1,14 +1,12 @@
-// AI ranking hook for the payment-goal finder.
+// AI hooks for the payment-goal finder and the guided chat.
 //
-// Phase 1: returns the rule-based matches unchanged (closest fit first) with
-// no explanation text.
+// Phase 1: both functions are no-ops. rankSuggestions returns the
+// rule-based matches unchanged; chatTurn returns null so the scripted
+// flow in src/chat.js handles every turn.
 //
-// TODO (AI phase): call a Supabase Edge Function, e.g.
-//   POST {SUPABASE_URL}/functions/v1/suggest-vehicles
-//   body: { goal, candidates: matches.map(m => ({ stock, name, type, price, payment })) }
-// The function holds the AI key server-side (never in this repo), re-ranks the
-// candidates by fit and features, and returns [{ stock, reason }]. The AI only
-// orders and explains; every payment shown still comes from src/quote.js.
+// TODO (AI phase): call a Supabase Edge Function that holds the AI key
+// server-side (never in this repo). The AI may re-rank or draft a reply;
+// every payment shown still comes from src/quote.js / findMatches().
 
 /**
  * @param {Array<{vehicle, quote, gap}>} matches
@@ -17,4 +15,21 @@
  */
 export async function rankSuggestions(matches, goal) { // eslint-disable-line no-unused-vars
   return matches;
+}
+
+/**
+ * Optional chat backend. Phase 1 returns null so the scripted guided
+ * flow handles the turn.
+ *
+ * TODO (AI phase): POST {SUPABASE_URL}/functions/v1/chat
+ *   body: { messages, answers, step }
+ * Return { text, chips?, input?, cards? } to replace the scripted
+ * prompt, or null to use src/chat.js. If you include cards, payments
+ * on those cards must still come from findMatches() / buildQuote().
+ *
+ * @param {{ state: object, inventory: object[], messages: object[], scripted: object }} context
+ * @returns {Promise<object|null>}
+ */
+export async function chatTurn(context) { // eslint-disable-line no-unused-vars
+  return null;
 }
