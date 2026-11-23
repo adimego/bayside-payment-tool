@@ -184,6 +184,7 @@ src/tax.js              ZIP lookup, tax rate, and out-of-state registration
 src/vauto-parse.js      vAuto rows → vehicle records, body → type, name → year/make/model/trim, CSV parser
 src/inventory.js        website link, similar vehicles, payment-goal finder, search
 src/ai-hook.js          rankSuggestions(): pass-through today; the AI phase plugs in here
+src/ads.js              ad catalog and shop-grid interleave (Zurich Shield, Bayside Maintenance)
 src/app.js              UI: shop list, vehicle quote page, find-by-payment, staff routes
 src/share.js            share-link URL, first name, and saved-quote snapshots (pure helpers)
 src/staff.js            Supabase client, auth, saved quotes, admin API
@@ -198,6 +199,7 @@ scripts/lib/vauto_pdf.py       PDF row/photo parser shared by those scripts
 scripts/build-tax-data.mjs  rebuild data/tax-rates.json from the public sources below
 scripts/vehicle-tax-rates.mjs  motor-vehicle titling/excise rates, local-tax flags, and unmodeled caps or fees
 scripts/lib/xlsx.mjs    tiny dependency-free .xlsx reader
+assets/ads/             logos for promotional cards (Zurich Shield logo from zurichshield.com)
 data/inventory.json     current inventory (from the latest vAuto AI Inventory Feed)
 data/tax-rates.json     bundled ZIP-prefix, state, ZIP, and motor-vehicle tax table
 data/ny-pa-local-zips.json  NY Pub 718 and PA local combined rates by ZIP
@@ -247,6 +249,13 @@ set role = 'admin',
     approved_by = id
 where email = 'PASTE_EMAIL_HERE';
 ```
+
+
+## Ad cards
+
+The shop grid shows a promotional card after every 6 vehicles, and the vehicle quote page shows the same cards next to the payment summary. Ads are not vehicles, so filters, sorting, counts, and Find by payment are unchanged. The catalog lives in `src/ads.js` (`ADS`); add an entry (and a logo under `assets/ads/` when needed) to show another card. Cards rotate when more than one ad is listed.
+
+Zurich Shield wording and colors come from [zurichshield.com](https://www.zurichshield.com/). Bayside Maintenance describes oil change and tire rotation plans at the store, with no prices or coverage terms.
 
 ## Upcoming phases
 

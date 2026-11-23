@@ -233,11 +233,12 @@ input:-webkit-autofill { animation-name: bayside-autofill; }
   .filters .filter-search { grid-column: auto; }
   .quote-layout { grid-template-columns: minmax(0, 1.1fr) minmax(340px, .9fr); gap: 1.35rem; align-items: start; }
   .quote-main .card:last-child { margin-bottom: 0; }
-  .quote-summary {
-    position: sticky;
-    top: calc(64px + 52px + 1.25rem + env(safe-area-inset-top, 0px));
-    margin-bottom: 0;
+  .quote-side {
+    display: grid;
+    gap: 1rem;
+    align-content: start;
   }
+  .quote-summary { margin-bottom: 0; }
   .quote-layout .btns { grid-template-columns: 1fr 1fr; }
   .quote-layout .btns:has(.btn:nth-child(3)) .primary { grid-column: 1 / -1; }
   .btn { white-space: nowrap; }
@@ -400,4 +401,96 @@ input:-webkit-autofill { animation-name: bayside-autofill; }
   }
   .chat-head { padding: .8rem 1rem; border-radius: 16px 16px 0 0; }
   .chat-card { grid-template-columns: 104px minmax(0, 1fr); }
+}
+
+/* Promotional ad cards (shop grid + vehicle quote). Colors come from each ad. */
+.ad-card {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  background: var(--ad-bg, #fff);
+  color: var(--ad-text, #000);
+  border: 1px solid var(--ad-border, var(--line));
+  border-radius: var(--radius);
+  padding: .9rem 1rem;
+  min-width: 0;
+  height: 100%;
+  box-shadow: var(--shadow);
+}
+.ad-card.ad-zurich { border-top: 4px solid var(--ad-accent, #005CB9); }
+.ad-brand { min-width: 0; }
+.ad-plate {
+  display: inline-flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 8px;
+  padding: .3rem .55rem;
+  box-shadow: 0 0 0 1px #E2E0E0;
+}
+.ad-logo {
+  display: block;
+  width: auto;
+  max-width: 220px;
+  height: 40px;
+  object-fit: contain;
+  object-position: left center;
+}
+.ad-name { font-weight: 800; letter-spacing: -0.02em; }
+.ad-headline {
+  margin: 0;
+  font-size: 1.08rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: inherit;
+  line-height: 1.25;
+}
+.ad-body {
+  margin: 0;
+  font-size: .88rem;
+  line-height: 1.4;
+  color: var(--ad-muted, var(--ad-text));
+}
+.ad-benefits {
+  margin: .05rem 0 0;
+  padding-left: 1.15rem;
+  font-size: .85rem;
+  line-height: 1.35;
+}
+.ad-benefits li { margin: .2rem 0; }
+.ad-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: auto;
+  padding: .7rem 1rem;
+  min-height: 44px;
+  border-radius: 10px;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  background: var(--ad-cta-bg, #384AD3);
+  color: var(--ad-cta-text, #fff);
+  border: 2px solid var(--ad-cta-bg, #384AD3);
+}
+.ad-cta:hover, .ad-cta:focus-visible {
+  color: var(--ad-cta-text, #fff);
+  filter: brightness(1.08);
+}
+.ad-cta:focus-visible { outline: 2px solid var(--ad-text, #000); outline-offset: 2px; }
+.ad-ask {
+  margin: 0;
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--ad-muted, var(--ad-text));
+}
+.ad-card[data-variant="quote"] {
+  height: auto;
+  margin-bottom: 0;
+}
+.ad-card[data-variant="quote"] .ad-logo { height: 36px; }
+.quote-side { display: grid; gap: 1rem; }
+@media (min-width: 768px) {
+  .ad-card { padding: 1.15rem 1.2rem; }
+  .ad-logo { height: 44px; max-width: 240px; }
+  .ad-headline { font-size: 1.12rem; }
 }

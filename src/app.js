@@ -9,6 +9,7 @@ import { renderStaff, renderAdmin, renderSharedQuote, bindSaveQuote, updateStaff
 import { parseShareSlug } from './share.js';
 import { DOWN_CHIPS, normalizeDown, dealSummary, shopHintText } from './deal.js';
 import { initChat } from './chat-ui.js';
+import { ADS, interleaveAds, quoteAds, adCardHtml } from './ads.js';
 
 const app = document.getElementById('app');
 let inventory = [];
@@ -290,7 +291,10 @@ function renderShop() {
   const draw = () => {
     const list = searchInventory(inventory, shopState);
     document.getElementById('count').textContent = `${list.length} vehicle${list.length === 1 ? '' : 's'}`;
-    document.getElementById('list').innerHTML = list.length ? list.map((v) => vehicleCard(v, deal)).join('') : '<p class="empty">No vehicles match. Try a different search.</p>';
+    const rows = interleaveAds(list, ADS);
+    document.getElementById('list').innerHTML = list.length
+      ? rows.map((row) => row.kind === 'ad' ? adCardHtml(row.ad) : vehicleCard(row.vehicle, deal)).join('')
+      : '<p class="empty">No vehicles match. Try a different search.</p>';
   };
   bindQuickDeal(document.getElementById('quick-deal'));
   document.getElementById('f-text').addEventListener('input', (e) => { shopState.text = e.target.value; draw(); });
@@ -370,16 +374,19 @@ function renderVehicle(stock, params) {
         <div class="card"><h2>Call for Price</h2><p>This vehicle doesn't have a listed price yet, so we can't show a payment. Call <a href="tel:+15407752277">(540) 775-2277</a> for a quote.</p>
           <div class="btns"><a class="btn primary" href="${LINKS.applyForFinancing}" target="_blank" rel="noopener">Apply for Financing</a><a class="btn" href="${LINKS.valueMyTrade}" target="_blank" rel="noopener">Value My Trade</a></div></div>`}
       </div>
-      ${v.price ? `
-      <aside class="card quote-summary">
-        <h2>Your quote</h2>
-        <div id="quote"></div>
-        <div class="btns">
-          <a class="btn primary" href="${LINKS.applyForFinancing}" target="_blank" rel="noopener">Apply for Financing</a>
-          <a class="btn" href="${LINKS.valueMyTrade}" target="_blank" rel="noopener">Value My Trade</a>
-          <button class="btn" id="share" type="button">Copy quote link</button>
-        </div>
-      </aside>` : ''}
+      <div class="quote-side">
+        ${v.price ? `
+        <aside class="card quote-summary">
+          <h2>Your quote</h2>
+          <div id="quote"></div>
+          <div class="btns">
+            <a class="btn primary" href="${LINKS.applyForFinancing}" target="_blank" rel="noopener">Apply for Financing</a>
+            <a class="btn" href="${LINKS.valueMyTrade}" target="_blank" rel="noopener">Value My Trade</a>
+            <button class="btn" id="share" type="button">Copy quote link</button>
+          </div>
+        </aside>` : ''}
+        ${quoteAds(ADS).map((ad) => adCardHtml(ad, { variant: 'quote' })).join('')}
+      </div>
     </div>
     <h2 class="similar-heading">Similar vehicles</h2>
     <div class="grid">${sims.length ? sims.map((s) => vehicleCard(s, cardDeal)).join('') : '<p class="empty">No close matches in stock right now.</p>'}</div>`;
