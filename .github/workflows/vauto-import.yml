@@ -1,0 +1,69 @@
+name: vAuto inventory import
+
+on:
+  schedule:
+    # 9:00 AM and 11:00 AM Eastern Standard Time (UTC-5).
+    # During Eastern Daylight Time (UTC-4, mid-March to early November)
+    # these fire at 10:00 AM and 12:00 PM ET — still after the 8:30 AM ET
+    # vAuto email. GitHub cron can lag by a few minutes, which is fine.
+    - cron: '0 14 * * *'
+    - cron: '0 16 * * *'
+  workflow_dispatch:
+
+# A push that uses GITHUB_TOKEN does not trigger the Tests and deploy
+# workflow, so this job runs the tests itself and, when inventory changes,
+# force-pushes gh-pages with the same stamp steps as that workflow.
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install PDF tools
+        run: pip install --quiet pymupdf pillow
+
+      - name: Import the latest vAuto report from email
+        id: import
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python3 scripts/import-vauto-email.py
+
+      - name: Test
+        if: steps.import.outputs.imported == 'yes'
+        run: |
+          node --test
+          python3 -m unittest discover -s tests -p 'test_*.py'
+
+      - name: Commit inventory
+        if: steps.import.outputs.imported == 'yes'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add data/inventory.json data/vauto-import-state.json assets/thumbs
+          DATE=$(date -u +%Y-%m-%d)
+          git diff --cached --quiet && echo "Nothing to commit" && exit 0
+          git commit -m "Inventory update $DATE"
+          git push origin HEAD:main
+
+      - name: Deploy to GitHub Pages
+        if: steps.import.outputs.imported == 'yes'
+        run: |
+          V="$(git rev-parse --short=7 HEAD)"
+          sed -i -E "s#(from '\./[A-Za-z0-9_-]+\.js)'#\1?v=$V'#g" src/*.js
+          sed -i -E "s#\?v=[A-Za-z0-9_-]+#?v=$V#g" index.html
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git commit -qam "Deploy $V" || true
+          git push --force origin HEAD:refs/heads/gh-pages

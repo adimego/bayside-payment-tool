@@ -8,7 +8,7 @@ Live site: https://adimego.github.io/bayside-payment-tool/
 Mobile-first and static (plain HTML, CSS and JavaScript modules, no build step), hosted on GitHub Pages.
 Pages serves the `gh-pages` branch. Work goes to `main`, and the GitHub Actions workflow copies `main` to `gh-pages` after the tests pass, so only tested code goes live.
 This is **phase 1 plus staff accounts**. It covers the quote math, inventory search, vehicle quote pages, similar vehicles, a rule-based
-"find by monthly payment" tool (all running on the sample vAuto report), and staff login with saved, shareable quotes on Supabase. The daily vAuto import and AI suggestions come in later phases (see below).
+"find by monthly payment" tool (all running on the sample vAuto report), and staff login with saved, shareable quotes on Supabase. A daily job imports the vAuto AI Inventory Feed from email; AI suggestions come in a later phase (see below).
 
 ## Quote rules
 
@@ -83,14 +83,14 @@ Verified against official 2026 DMV, DOR, and statute sources, plus Michigan Trea
 
 ## Inventory
 
-- The source is the daily vAuto report. Its columns are Stock #, Vehicle, Certified, VIN, New/Used, Odometer, Body, Color, Interior Color and Price.
+- The source is the daily vAuto **AI Inventory Feed** PDF (xlsx/csv still work as a fallback). The PDF's columns are Stock #, Vehicle (name, VIN, New/Used, Odometer, and Certified when present), Body (body style plus exterior and interior color), Price, and Photo Thumbnail.
 - **Vehicle type** comes from the Body column:
   - SUV: Sport Utility
   - Truck: Crew Cab or Double Cab
   - Car: Sedan, Coupe or Hatchback
   - Van: Passenger Van
 - A vehicle with **no price** shows **Call for Price** and no quote.
-- The report has no photos or options, so each vehicle links to the dealer website by stock number:
+- Each vehicle also links to the dealer website by stock number:
   `https://www.baysidecdjrva.com/all-inventory/index.htm?search=<STOCK>`. That Dealer.com inventory search returns the single matching vehicle.
 - **Similar vehicles** are the same type, priced within ±15%. The same make ranks first, then the same model, then the closest price.
 - **Find by payment** works the quote math backward from a monthly goal to the highest vAuto price that fits. It filters by type (and new/used if picked) and sorts the matches by closest fit under the goal.
@@ -98,7 +98,14 @@ Verified against official 2026 DMV, DOR, and statute sources, plus Michigan Trea
 To refresh `data/inventory.json` from a new report:
 
 ```sh
+node scripts/import-vauto.mjs path/to/report.pdf    # AI Inventory Feed (preferred)
 node scripts/import-vauto.mjs path/to/report.xlsx   # .csv also works
+```
+
+A GitHub Action checks `baysidekg@gmail.com` every day at **9:00 AM** and **11:00 AM Eastern Standard Time** (10:00 AM and 12:00 PM during daylight time) for a new feed emailed by vAuto at 8:30 AM ET. It parses the PDF, updates photos, runs the tests, commits `Inventory update YYYY-MM-DD`, and republishes the site. It skips the commit when there is no new report or nothing changed, and it will not commit a parse that is empty or less than half the current inventory.
+
+```sh
+python3 scripts/import-vauto-email.py --file path/to/report.pdf   # local import with the same safety checks
 ```
 
 ## Sales tax data
@@ -183,22 +190,28 @@ src/staff.js            Supabase client, auth, saved quotes, admin API
 src/staff-ui.js         Staff, admin, and public shared-quote screens
 src/supabase-config.js  project URL and the public publishable (anon) key
 supabase/migrations/    Postgres schema applied to the Bayside Pricing Tool project
-scripts/import-vauto.mjs  report (.xlsx/.csv) → data/inventory.json
+scripts/import-vauto.mjs  report (.pdf/.xlsx/.csv) → data/inventory.json
+scripts/import-vauto-email.py  daily Gmail fetch + safety checks + inventory write
+scripts/parse-vauto-pdf.py     AI Inventory Feed PDF → CSV
+scripts/extract-pdf-thumbs.py  AI Inventory Feed PDF → assets/thumbs
+scripts/lib/vauto_pdf.py       PDF row/photo parser shared by those scripts
 scripts/build-tax-data.mjs  rebuild data/tax-rates.json from the public sources below
 scripts/vehicle-tax-rates.mjs  motor-vehicle titling/excise rates, local-tax flags, and unmodeled caps or fees
 scripts/lib/xlsx.mjs    tiny dependency-free .xlsx reader
-data/inventory.json     current inventory (from the Nov 19, 2026 sample report)
+data/inventory.json     current inventory (from the latest vAuto AI Inventory Feed)
 data/tax-rates.json     bundled ZIP-prefix, state, ZIP, and motor-vehicle tax table
 data/ny-pa-local-zips.json  NY Pub 718 and PA local combined rates by ZIP
-tests/                  node --test unit tests (+ sample report fixture)
+tests/                  node --test and Python unit tests (+ sample report fixture)
 .github/workflows/test.yml  runs the tests on every push and PR, then publishes main to gh-pages
+.github/workflows/vauto-import.yml  weekday-and-weekend cron: email import, test, commit, deploy
 ```
 
 ## Run locally
 
 ```sh
-node --test                  # unit tests (Node 20+)
-python3 -m http.server 8080  # then open http://localhost:8080
+node --test                                  # Node unit tests (Node 20+)
+python3 -m unittest discover -s tests -p 'test_*.py'  # PDF import tests (pymupdf + pillow)
+python3 -m http.server 8080                  # then open http://localhost:8080
 ```
 
 ## Staff accounts and saved quotes
@@ -237,9 +250,8 @@ where email = 'PASTE_EMAIL_HERE';
 
 ## Upcoming phases
 
-1. **Daily vAuto import by email.** vAuto emails the scheduled report every morning to a Postmark inbound address. Postmark posts the attachment to a Supabase Edge Function, which reuses `src/vauto-parse.js` and loads the inventory table. The site then reads inventory from Supabase instead of `data/inventory.json`.
-2. **AI vehicle suggestions.** A Supabase Edge Function ranks the payment-goal matches by fit and explains each pick in plain words. It plugs in at `rankSuggestions()` in `src/ai-hook.js`. Payments always come from `src/quote.js`, never from the AI.
-3. **Launch.** Add a custom domain and link the tool from baysidecdjrva.com.
+1. **AI vehicle suggestions.** A Supabase Edge Function ranks the payment-goal matches by fit and explains each pick in plain words. It plugs in at `rankSuggestions()` in `src/ai-hook.js`. Payments always come from `src/quote.js`, never from the AI.
+2. **Launch.** Add a custom domain and link the tool from baysidecdjrva.com.
 
 ## Notes
 

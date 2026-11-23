@@ -11,7 +11,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install PDF tools
+        run: pip install --quiet pymupdf pillow
       - run: node --test
+      - run: python3 -m unittest discover -s tests -p 'test_*.py'
 
   # GitHub Pages serves the gh-pages branch. After tests pass on main,
   # copy main to gh-pages so the live site only ever gets tested code.
