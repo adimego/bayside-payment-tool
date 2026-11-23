@@ -54,6 +54,9 @@ export function quoteVehicleSnapshot(v) {
     condition: v.condition ?? null,
     stock: v.stock ?? null,
     photo: safeSnapshotPhoto(v.photo),
+    odometer: v.odometer ?? null,
+    vin: v.vin ?? null,
+    custom: Boolean(v.custom),
   };
 }
 

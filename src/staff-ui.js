@@ -20,6 +20,7 @@ import {
 } from './staff.js';
 import { vehiclePhotoHtml } from './inventory.js';
 import { sharedQuoteUrl, customerFirstName, dealParamsFromSnapshot, formatSavedDate } from './share.js';
+import { customQuoteHash } from './custom-vehicle.js';
 import { LINKS } from './quote.js';
 
 const money = (n) => Number(n || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
@@ -31,6 +32,13 @@ function errText(error, fallback) {
     return 'Too many emails were sent from this project this hour (the default built-in limit is 2 emails per hour). Please wait and try again, or ask an admin to add custom SMTP.';
   }
   return m;
+}
+
+function quoteOpenHref(row) {
+  const dealQs = dealParamsFromSnapshot(row?.deal);
+  if (row?.vehicle?.custom) return customQuoteHash(row.vehicle, dealQs);
+  if (row?.stock) return `#/vehicle/${encodeURIComponent(row.stock)}?${dealQs}`;
+  return '';
 }
 
 function formMsg(el, text, ok = false) {
@@ -259,7 +267,7 @@ async function renderMyQuotes(app) {
           <div class="meta">${esc(title)}${row.stock ? ' · Stock ' + esc(row.stock) : ''}${pay ? ' · ' + esc(pay) : ''} · ${esc(formatSavedDate(row.created_at))}</div>
         </div>
         <div class="qactions">
-          ${row.stock ? `<a class="btn small" href="#/vehicle/${encodeURIComponent(row.stock)}?${dealParamsFromSnapshot(row.deal)}">Open</a>` : ''}
+          ${quoteOpenHref(row) ? `<a class="btn small" href="${esc(quoteOpenHref(row))}">Open</a>` : ''}
           <button class="btn small" type="button" data-copy="${esc(row.slug)}">Copy quote link</button>
           <button class="btn small danger" type="button" data-del="${esc(row.id)}">Delete</button>
         </div>
@@ -368,8 +376,8 @@ export async function renderSharedQuote(app, slug, { breakdownFromSaved }) {
             ${vehiclePhotoHtml({ ...v, name: title }, { className: 'vphoto', eager: true })}
             <div class="vhead-title">
               <h1>${esc(title)}</h1>
-              <div class="sub">${v.condition ? `<span class="badge ${v.condition === 'Used' ? 'used' : ''}">${esc(v.condition)}</span>` : ''}
-                ${data.stock ? 'Stock ' + esc(data.stock) : ''} · Quote for ${esc(first)}</div>
+              <div class="sub">${v.condition ? `<span class="badge ${v.condition === 'Used' ? 'used' : ''}">${esc(v.condition)}</span>` : ''}${v.custom ? '<span class="badge custom">Custom vehicle</span>' : ''}
+                ${data.stock ? 'Stock ' + esc(data.stock) : (v.stock ? 'Stock ' + esc(v.stock) : '')} · Quote for ${esc(first)}</div>
             </div>
           </div>
         </div>

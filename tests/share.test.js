@@ -7,6 +7,7 @@ import {
   parseShareSlug,
   quoteDealSnapshot,
   quoteResultsSnapshot,
+  quoteVehicleSnapshot,
   dealParamsFromSnapshot,
   formatSavedDate,
 } from '../src/share.js';
@@ -34,6 +35,7 @@ test('parseShareSlug reads #/q/slug and ?q=', () => {
   assert.equal(parseShareSlug('#/', '?q=fromQuery'), 'fromQuery');
   assert.equal(parseShareSlug('#/shop?q=hashQuery'), 'hashQuery');
   assert.equal(parseShareSlug('#/vehicle/TT173979'), null);
+  assert.equal(parseShareSlug('#/c?y=2024&mk=Honda&md=Accord&c=Used&p=22500'), null);
   assert.equal(parseShareSlug(''), null);
 });
 
@@ -84,4 +86,26 @@ test('quoteResultsSnapshot keeps the display fields and drops nothing required f
 
 test('formatSavedDate prints a US date in America/New_York', () => {
   assert.equal(formatSavedDate('2026-11-19T18:00:00Z'), 'Nov 19, 2026');
+});
+
+test('quoteVehicleSnapshot keeps custom vehicle fields for a saved quote', () => {
+  const snap = quoteVehicleSnapshot({
+    year: 2024,
+    make: 'Honda',
+    model: 'Accord',
+    trim: 'Sport',
+    name: '2024 Honda Accord Sport',
+    price: 22500,
+    condition: 'Used',
+    stock: 'CUST01',
+    photo: null,
+    odometer: 32000,
+    vin: '1HGCV1F34NA000001',
+    custom: true,
+  });
+  assert.equal(snap.custom, true);
+  assert.equal(snap.odometer, 32000);
+  assert.equal(snap.vin, '1HGCV1F34NA000001');
+  assert.equal(snap.price, 22500);
+  assert.equal(quoteVehicleSnapshot({ year: 2025, make: 'Jeep', model: 'Compass' }).custom, false);
 });

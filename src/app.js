@@ -7,6 +7,7 @@ import { rankSuggestions } from './ai-hook.js';
 import { initStaffAuth, onStaffChange, isApprovedStaff } from './staff.js';
 import { renderStaff, renderAdmin, renderSharedQuote, bindSaveQuote, updateStaffNav } from './staff-ui.js';
 import { parseShareSlug } from './share.js';
+import { CUSTOM_FORM_PATH, CUSTOM_QUOTE_PATH, validateCustomVehicle, parseCustomVehicle, customQuoteHash, writeCustomVehicle, readCustomVehicle, isCustomVehicle } from './custom-vehicle.js';
 import { DOWN_CHIPS, normalizeDown, dealSummary, shopHintText } from './deal.js';
 import { initChat } from './chat-ui.js';
 import { ADS, interleaveAds, quoteAds, adCardHtml, initAds } from './ads.js';
@@ -127,7 +128,7 @@ function bindDealForm(root, d, onChange, { onTerm } = {}) {
 }
 
 function badges(v) {
-  return `<span class="badge ${v.condition === 'Used' ? 'used' : ''}">${v.condition}</span>${v.certified ? '<span class="badge cert">Certified</span>' : ''}`;
+  return `<span class="badge ${v.condition === 'Used' ? 'used' : ''}">${v.condition}</span>${v.certified ? '<span class="badge cert">Certified</span>' : ''}${v.custom ? ' <span class="badge custom">Custom vehicle</span>' : ''}`;
 }
 
 function cardNumsHtml(v, d) {
@@ -273,7 +274,10 @@ const shopState = { text: '', type: 'Any', condition: 'Any', sort: 'price-asc' }
 function renderShop() {
   setTab('shop');
   app.innerHTML = `
-    <h1>In-stock vehicles</h1>
+    <div class="shop-head">
+      <h1>In-stock vehicles</h1>
+      ${isApprovedStaff() ? '<a class="btn small" href="#/custom" id="custom-vehicle-btn">Custom vehicle</a>' : ''}
+    </div>
     <div class="card">
       <div class="filters">
         <div class="wide filter-search"><label for="f-text">Search</label><input id="f-text" type="search" placeholder="Model, trim, color, stock #" value="${esc(shopState.text)}"></div>
@@ -336,9 +340,14 @@ function breakdownFromSaved(results, publicDeal = {}) {
   return breakdownHtml(q);
 }
 
-function renderVehicle(stock, params) {
+function vehicleQuoteUrl(v, d) {
+  if (isCustomVehicle(v)) return customQuoteHash(v, dealParams(d));
+  return `#/vehicle/${encodeURIComponent(v.stock)}?${dealParams(d)}`;
+}
+
+function renderVehicle(stock, params, customVehicle = null) {
   setTab('shop');
-  const v = inventory.find((x) => x.stock === stock);
+  const v = customVehicle || inventory.find((x) => x.stock === stock);
   if (!v) {
     app.innerHTML = `<a class="back" href="#/">← All vehicles</a><p class="empty">Stock # ${esc(stock)} isn't in today's inventory. It may have sold. Call <a href="tel:+15407752277">(540) 775-2277</a>.</p>`;
     return;
@@ -357,17 +366,17 @@ function renderVehicle(stock, params) {
             ${vehiclePhotoHtml(v, { className: 'vphoto', eager: true })}
             <div class="vhead-title">
               <h1>${esc(v.name)}</h1>
-              <div class="sub">${badges(v)} ${esc(v.body ?? '')} · Stock ${esc(v.stock)}</div>
+              <div class="sub">${badges(v)}${v.body ? ' ' + esc(v.body) : ''}${v.stock ? ' · Stock ' + esc(v.stock) : ''}</div>
             </div>
           </div>
           <dl class="specs">
-            <dt>Exterior</dt><dd>${esc(v.color ?? '—')}</dd>
-            <dt>Interior</dt><dd>${esc(v.interiorColor ?? '—')}</dd>
+            <dt>Exterior</dt><dd>${esc(v.color || '—')}</dd>
+            <dt>Interior</dt><dd>${esc(v.interiorColor || '—')}</dd>
             <dt>Mileage</dt><dd>${v.odometer != null ? v.odometer.toLocaleString() + ' mi' : '—'}</dd>
-            <dt>VIN</dt><dd class="vin">${esc(v.vin ?? '—')}</dd>
+            <dt>VIN</dt><dd class="vin">${esc(v.vin || '—')}</dd>
             <dt>Total Selling Price</dt><dd>${v.price ? money0(v.price + PROCESSING_FEE) : '<span class="cfp">Call for Price</span>'}</dd>
           </dl>
-          <p class="site-link"><a class="btn small" href="${websiteUrl(v.stock)}" target="_blank" rel="noopener">See photos and options on baysidecdjrva.com</a></p>
+          ${v.custom ? '' : `<p class="site-link"><a class="btn small" href="${websiteUrl(v.stock)}" target="_blank" rel="noopener">See photos and options on baysidecdjrva.com</a></p>`}
         </div>
         ${v.price ? `
         <div class="card" id="deal-form"><h2>Your deal</h2>${dealFormHtml(d, { allowMilitary: !isUsedVehicle(v.condition), year: v.year, capTerms: true })}</div>` : `
@@ -388,14 +397,14 @@ function renderVehicle(stock, params) {
         ${quoteAds(ADS).map((ad) => adCardHtml(ad, { variant: 'quote' })).join('')}
       </div>
     </div>
-    <h2 class="similar-heading">Similar vehicles</h2>
-    <div class="grid">${sims.length ? sims.map((s) => vehicleCard(s, cardDeal)).join('') : '<p class="empty">No close matches in stock right now.</p>'}</div>`;
+    ${v.custom ? '' : `<h2 class="similar-heading">Similar vehicles</h2>
+    <div class="grid">${sims.length ? sims.map((s) => vehicleCard(s, cardDeal)).join('') : '<p class="empty">No close matches in stock right now.</p>'}</div>`}`;
 
   if (!v.price) return;
   const draw = () => {
     document.getElementById('quote').innerHTML = breakdownHtml(buildQuote({ ...d, vautoPrice: v.price, condition: v.condition, year: v.year, name: v.name }), { staffApr: isApprovedStaff() });
     deal = { ...d, term: preferredTerm }; saveDeal();
-    history.replaceState(null, '', `#/vehicle/${encodeURIComponent(v.stock)}?${dealParams(d)}`);
+    history.replaceState(null, '', vehicleQuoteUrl(v, d));
   };
   bindDealForm(document.getElementById('deal-form'), d, draw, { onTerm: (t) => { preferredTerm = t; } });
   document.getElementById('share').addEventListener('click', async (e) => {
@@ -470,11 +479,106 @@ function renderGoal() {
   draw();
 }
 
+function fieldError(id, message = '') {
+  return `<p class="field-error" id="${id}-err">${esc(message)}</p>`;
+}
+
+function renderCustomForm() {
+  setTab('shop');
+  if (!isApprovedStaff()) {
+    app.innerHTML = `<a class="back" href="#/">← All vehicles</a>
+      <div class="card"><h1>Staff only</h1>
+        <p>Sign in with an approved staff account to quote a vehicle that is not in today's inventory.</p>
+        <div class="btns"><a class="btn primary" href="#/staff">Staff sign in</a></div>
+      </div>`;
+    return;
+  }
+  const saved = readCustomVehicle(sessionStorage) || {};
+  app.innerHTML = `
+    <a class="back" href="#/">← All vehicles</a>
+    <div class="card" id="custom-form-card">
+      <h1>Custom vehicle</h1>
+      <p class="hint">Enter a selling price the same way as a vAuto price. The $${PROCESSING_FEE} processing fee is added automatically, and tax, registration, rates, and term caps use the same rules as in-stock vehicles. This quote is one-off — it is not added to the shop list.</p>
+      <form id="custom-form" class="auth-form" novalidate>
+        <div class="deal-grid">
+          <div><label for="cv-year">Year</label><input id="cv-year" name="year" inputmode="numeric" maxlength="4" required value="${esc(saved.year || '')}" placeholder="2024" autocomplete="off">${fieldError('cv-year')}</div>
+          <div><label for="cv-condition">New / used</label>
+            <select id="cv-condition" name="condition" required>
+              <option value="" ${saved.condition ? '' : 'selected'} disabled>Select</option>
+              ${['New', 'Used'].map((c) => `<option ${c === saved.condition ? 'selected' : ''}>${c}</option>`).join('')}
+            </select>${fieldError('cv-condition')}</div>
+          <div><label for="cv-make">Make</label><input id="cv-make" name="make" required value="${esc(saved.make || '')}" placeholder="Jeep" autocomplete="off">${fieldError('cv-make')}</div>
+          <div><label for="cv-model">Model</label><input id="cv-model" name="model" required value="${esc(saved.model || '')}" placeholder="Grand Cherokee" autocomplete="off">${fieldError('cv-model')}</div>
+          <div class="wide"><label for="cv-trim">Trim <span class="optional">(optional)</span></label><input id="cv-trim" name="trim" value="${esc(saved.trim || '')}" placeholder="Laredo X" autocomplete="off"></div>
+          <div><label for="cv-price">Selling price</label><input id="cv-price" name="price" inputmode="decimal" required value="${saved.price ? esc(String(saved.price)) : ''}" placeholder="28995" autocomplete="off">${fieldError('cv-price')}
+            <p class="hint">vAuto-style price. The $${PROCESSING_FEE} processing fee is added on the quote.</p></div>
+          <div><label for="cv-odometer">Mileage <span class="optional">(optional)</span></label><input id="cv-odometer" name="odometer" inputmode="numeric" value="${saved.odometer != null ? esc(String(saved.odometer)) : ''}" placeholder="32000" autocomplete="off">${fieldError('cv-odometer')}</div>
+          <div><label for="cv-stock">Stock # <span class="optional">(optional)</span></label><input id="cv-stock" name="stock" value="${esc(saved.stock || '')}" autocomplete="off"></div>
+          <div><label for="cv-vin">VIN <span class="optional">(optional)</span></label><input id="cv-vin" name="vin" maxlength="17" value="${esc(saved.vin || '')}" autocomplete="off">${fieldError('cv-vin')}</div>
+        </div>
+        <p class="form-msg err" id="cv-msg" hidden></p>
+        <div class="btns">
+          <button class="btn primary" type="submit">Build quote</button>
+        </div>
+      </form>
+    </div>`;
+  const form = document.getElementById('custom-form');
+  const showErrors = (errors) => {
+    for (const [name, id] of [['year', 'cv-year'], ['condition', 'cv-condition'], ['make', 'cv-make'], ['model', 'cv-model'], ['price', 'cv-price'], ['odometer', 'cv-odometer'], ['vin', 'cv-vin']]) {
+      const el = document.getElementById(id);
+      const err = document.getElementById(`${id}-err`);
+      const message = errors[name] || '';
+      if (el) el.setAttribute('aria-invalid', message ? 'true' : 'false');
+      if (err) err.textContent = message;
+    }
+    const msg = document.getElementById('cv-msg');
+    if (msg) {
+      msg.hidden = !errors._form;
+      msg.textContent = errors._form || '';
+    }
+  };
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const result = validateCustomVehicle({
+      year: fd.get('year'),
+      make: fd.get('make'),
+      model: fd.get('model'),
+      trim: fd.get('trim'),
+      condition: fd.get('condition'),
+      price: fd.get('price'),
+      odometer: fd.get('odometer'),
+      stock: fd.get('stock'),
+      vin: fd.get('vin'),
+    });
+    showErrors(result.errors);
+    if (!result.ok) {
+      form.querySelector('[aria-invalid="true"]')?.focus();
+      return;
+    }
+    writeCustomVehicle(sessionStorage, result.vehicle);
+    location.hash = customQuoteHash(result.vehicle, dealParams(deal));
+  });
+}
+
+function renderCustomQuote(params) {
+  const parsed = parseCustomVehicle(params);
+  const v = parsed.ok ? parsed.vehicle : readCustomVehicle(sessionStorage);
+  if (!v) {
+    app.innerHTML = `<a class="back" href="#/">← All vehicles</a><p class="empty">This custom vehicle link is missing or invalid. ${isApprovedStaff() ? '<a href="#/custom">Enter the vehicle again</a>.' : 'Call <a href="tel:+15407752277">(540) 775-2277</a>.'}</p>`;
+    return;
+  }
+  if (parsed.ok) writeCustomVehicle(sessionStorage, v);
+  renderVehicle(v.stock || 'custom', params, v);
+}
+
 // ---------- router ----------
 function route() {
   updateStaffNav();
   const shareSlug = parseShareSlug(location.hash, location.search);
-  if (shareSlug && !(location.hash.replace(/^#/, '').split('?')[0].startsWith('/vehicle'))) {
+  const hashPathEarly = (location.hash.replace(/^#/, '') || '/').split('?')[0];
+  const skipShare = hashPathEarly === '/c' || hashPathEarly.startsWith('/c/') || hashPathEarly === '/custom' || hashPathEarly.startsWith('/custom/') || hashPathEarly.startsWith('/vehicle');
+  if (shareSlug && !skipShare) {
     // Prefer an explicit #/q/slug or a ?q= param, but don't steal a vehicle page.
     const hashPath = (location.hash.replace(/^#/, '') || '/').split('?')[0];
     const hashParts = hashPath.split('/').filter(Boolean);
@@ -491,7 +595,9 @@ function route() {
   const [path, query = ''] = hash.split('?');
   const params = new URLSearchParams(query);
   const parts = path.split('/').filter(Boolean);
-  if (parts[0] === 'vehicle' && parts[1]) renderVehicle(decodeURIComponent(parts[1]), params);
+  if (parts[0] === CUSTOM_FORM_PATH) renderCustomForm();
+  else if (parts[0] === CUSTOM_QUOTE_PATH) renderCustomQuote(params);
+  else if (parts[0] === 'vehicle' && parts[1]) renderVehicle(decodeURIComponent(parts[1]), params);
   else if (parts[0] === 'goal') renderGoal();
   else if (parts[0] === 'staff') { setTab('staff'); renderStaff(app, parts); }
   else if (parts[0] === 'admin') { setTab('admin'); renderAdmin(app); }
@@ -513,7 +619,8 @@ async function start() {
     const path = (location.hash.replace(/^#/, '') || '/').split('?')[0];
     const top = path.split('/').filter(Boolean)[0];
     if (top === 'staff' || top === 'admin') route();
-    else if (top === 'vehicle' && isApprovedStaff() !== Boolean(document.querySelector('.save-quote'))) route();
+    else if ((top === 'vehicle' || top === CUSTOM_QUOTE_PATH) && isApprovedStaff() !== Boolean(document.querySelector('.save-quote'))) route();
+    else if ((!top || top === CUSTOM_FORM_PATH) && isApprovedStaff() !== Boolean(document.querySelector('#custom-vehicle-btn, #custom-form'))) route();
   });
   try {
     const res = await fetch('data/inventory.json', { cache: 'no-cache' });
@@ -529,7 +636,7 @@ async function start() {
     document.getElementById('inv-date').textContent = `Inventory updated ${when.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}.`;
   } catch (err) {
     const top = ((location.hash.replace(/^#/, '') || '/').split('?')[0]).split('/').filter(Boolean)[0];
-    if (top !== 'staff' && top !== 'admin' && top !== 'q') {
+    if (top !== 'staff' && top !== 'admin' && top !== 'q' && top !== CUSTOM_FORM_PATH && top !== CUSTOM_QUOTE_PATH) {
       app.innerHTML = '<p class="empty">Inventory could not be loaded. Please call (540) 775-2277.</p>';
       console.error(err);
       return;
