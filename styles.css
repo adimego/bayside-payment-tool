@@ -403,11 +403,12 @@ input:-webkit-autofill { animation-name: bayside-autofill; }
   .chat-card { grid-template-columns: 104px minmax(0, 1fr); }
 }
 
-/* Promotional ad cards (shop grid + vehicle quote). Colors come from each ad. */
+/* Promotional ad cards: same grid cell and shape as .vcard. Full copy is in the dialog. */
 .ad-card {
-  display: flex;
-  flex-direction: column;
-  gap: .5rem;
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: .85rem;
+  align-items: stretch;
   background: var(--ad-bg, #fff);
   color: var(--ad-text, #000);
   border: 1px solid var(--ad-border, var(--line));
@@ -416,52 +417,81 @@ input:-webkit-autofill { animation-name: bayside-autofill; }
   min-width: 0;
   height: 100%;
   box-shadow: var(--shadow);
+  cursor: pointer;
+  text-align: left;
 }
-.ad-card.ad-zurich { border-top: 4px solid var(--ad-accent, #005CB9); }
-.ad-brand { min-width: 0; }
-.ad-plate {
-  display: inline-flex;
-  align-items: center;
-  background: #fff;
+.ad-card:hover { box-shadow: 0 2px 8px rgba(35, 31, 32, 0.08); }
+.ad-thumb {
+  aspect-ratio: 3 / 2;
+  width: 100%;
   border-radius: 8px;
-  padding: .3rem .55rem;
-  box-shadow: 0 0 0 1px #E2E0E0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  align-self: start;
+  padding: .35rem .4rem;
 }
-.ad-logo {
+.ad-thumb .ad-logo,
+.ad-thumb .ad-name {
   display: block;
   width: auto;
-  max-width: 220px;
-  height: 40px;
+  max-width: 100%;
+  max-height: 100%;
+  height: auto;
   object-fit: contain;
-  object-position: left center;
 }
-.ad-name { font-weight: 800; letter-spacing: -0.02em; }
-.ad-headline {
+.ad-plate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  border-radius: 6px;
+}
+.ad-copy { display: flex; flex-direction: column; min-width: 0; }
+.ad-headline, .ad-card .title {
   margin: 0;
-  font-size: 1.08rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-weight: 700;
   color: inherit;
   line-height: 1.25;
 }
-.ad-body {
-  margin: 0;
-  font-size: .88rem;
-  line-height: 1.4;
+.ad-teaser {
+  margin: .2rem 0 0;
   color: var(--ad-muted, var(--ad-text));
-}
-.ad-benefits {
-  margin: .05rem 0 0;
-  padding-left: 1.15rem;
   font-size: .85rem;
-  line-height: 1.35;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
-.ad-benefits li { margin: .2rem 0; }
+.ad-card .nums { display: flex; margin-top: auto; padding-top: .55rem; }
+.ad-open {
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 700;
+  padding: .4rem .75rem;
+  min-height: 36px;
+  border-radius: 10px;
+  cursor: pointer;
+  background: var(--ad-cta-bg, #384AD3);
+  color: var(--ad-cta-text, #fff);
+  border: 2px solid var(--ad-cta-bg, #384AD3);
+}
+.ad-open:hover, .ad-open:focus-visible { filter: brightness(1.08); }
+.ad-open:focus-visible { outline: 2px solid var(--ad-text, #000); outline-offset: 2px; }
+.ad-name { font-weight: 800; letter-spacing: -0.02em; }
+.ad-body { margin: 0; font-size: .9rem; line-height: 1.4; color: var(--ad-muted, var(--ad-text)); }
+.ad-benefits { margin: .15rem 0 0; padding-left: 1.15rem; font-size: .9rem; line-height: 1.4; }
+.ad-benefits li { margin: .25rem 0; }
 .ad-cta {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: auto;
+  margin-top: .75rem;
   padding: .7rem 1rem;
   min-height: 44px;
   border-radius: 10px;
@@ -472,25 +502,101 @@ input:-webkit-autofill { animation-name: bayside-autofill; }
   color: var(--ad-cta-text, #fff);
   border: 2px solid var(--ad-cta-bg, #384AD3);
 }
-.ad-cta:hover, .ad-cta:focus-visible {
-  color: var(--ad-cta-text, #fff);
-  filter: brightness(1.08);
-}
+.ad-cta:hover, .ad-cta:focus-visible { color: var(--ad-cta-text, #fff); filter: brightness(1.08); }
 .ad-cta:focus-visible { outline: 2px solid var(--ad-text, #000); outline-offset: 2px; }
-.ad-ask {
-  margin: 0;
-  font-size: .8rem;
-  font-weight: 600;
-  color: var(--ad-muted, var(--ad-text));
-}
-.ad-card[data-variant="quote"] {
-  height: auto;
-  margin-bottom: 0;
-}
-.ad-card[data-variant="quote"] .ad-logo { height: 36px; }
+.ad-ask { margin: .75rem 0 0; font-size: .85rem; font-weight: 600; color: var(--ad-muted, var(--ad-text)); }
 .quote-side { display: grid; gap: 1rem; }
+.quote-side .ad-card { height: auto; }
+
 @media (min-width: 768px) {
-  .ad-card { padding: 1.15rem 1.2rem; }
-  .ad-logo { height: 44px; max-width: 240px; }
-  .ad-headline { font-size: 1.12rem; }
+  .ad-card { padding: 1.15rem 1.2rem; grid-template-columns: 128px minmax(0, 1fr); gap: 1rem; }
+  .ad-card .title { font-size: 1.02rem; letter-spacing: -0.015em; }
+}
+@media (min-width: 1200px) {
+  .ad-card { padding: 1.25rem 1.35rem; }
+  .ad-card .title { font-size: 1.05rem; }
+}
+
+/* Ad detail dialog (modal on desktop, sheet on phones) */
+body.ad-dialog-open { overflow: hidden; }
+.ad-dialog-root[hidden] { display: none; }
+.ad-dialog-root {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  --ad-bg: #fff;
+  --ad-text: #000;
+  --ad-muted: #595959;
+  --ad-accent: #005CB9;
+  --ad-cta-bg: #384AD3;
+  --ad-cta-text: #fff;
+  --ad-border: #005CB9;
+}
+.ad-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(35, 31, 32, 0.52);
+}
+.ad-dialog {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 32rem;
+  max-height: min(88vh, 40rem);
+  overflow: auto;
+  background: var(--ad-bg);
+  color: var(--ad-text);
+  border-radius: 16px 16px 0 0;
+  padding: 1.1rem 1.15rem 1.35rem;
+  padding-bottom: max(1.35rem, env(safe-area-inset-bottom));
+  box-shadow: 0 -8px 32px rgba(35, 31, 32, 0.22);
+}
+.ad-dialog:focus { outline: none; }
+.ad-dialog-close {
+  position: absolute;
+  top: .7rem;
+  right: .7rem;
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 700;
+  padding: .35rem .65rem;
+  min-height: 36px;
+  border-radius: 999px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--ad-text);
+  border: 1px solid var(--ad-muted, var(--ad-border));
+}
+.ad-dialog-close:hover, .ad-dialog-close:focus-visible { background: rgba(0, 0, 0, 0.06); }
+.ad-dialog-close:focus-visible { outline: 2px solid var(--ad-text); outline-offset: 2px; }
+.ad-dialog-root.ad-bayside .ad-dialog-close:hover,
+.ad-dialog-root.ad-bayside .ad-dialog-close:focus-visible { background: rgba(255, 255, 255, 0.12); }
+.ad-dialog-brand {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 2.5rem;
+  margin: 0 4.5rem .75rem 0;
+}
+.ad-dialog-brand .ad-logo { display: block; width: auto; max-width: 220px; height: 40px; object-fit: contain; }
+.ad-dialog-brand .ad-plate {
+  display: inline-flex;
+  width: auto;
+  height: auto;
+  padding: .3rem .55rem;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px #E2E0E0;
+}
+.ad-dialog-title { margin: 0 4.5rem .5rem 0; font-size: 1.2rem; letter-spacing: -0.02em; color: inherit; }
+.ad-dialog .ad-body { margin-top: .15rem; }
+@media (min-width: 640px) {
+  .ad-dialog-root { align-items: center; padding: 1.5rem; }
+  .ad-dialog {
+    border-radius: var(--radius);
+    padding: 1.4rem 1.5rem 1.5rem;
+    box-shadow: 0 12px 40px rgba(35, 31, 32, 0.28);
+  }
 }

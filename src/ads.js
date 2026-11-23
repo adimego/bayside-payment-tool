@@ -2,8 +2,12 @@
 // Add a new entry to ADS (and its logo under assets/ads/) to show another ad.
 // Copy and colors for Zurich Shield come from https://www.zurichshield.com/
 // (see comments on that entry). Do not invent prices, coverage terms, or claims.
+//
+// Compact cards match the vehicle-card layout. The full benefits, ask line,
+// and external CTA open in an accessible dialog.
 
 export const AD_INTERVAL = 6;
+export const AD_OPEN_LABEL = 'Learn more';
 
 export const ADS = [
   {
@@ -17,6 +21,8 @@ export const ADS = [
     headline: 'Protection for the road ahead',
     // Official tagline and overview from https://www.zurichshield.com/
     body: 'Designed to help keep your vehicle looking good inside and out for years to come, Zurich Shield protects your car from harmful environmental elements and stains.',
+    // Short line for the compact card, taken from the official overview.
+    teaser: 'Protects your car from harmful elements and stains.',
     benefits: [
       // From the Benefits of Zurich Shield section on zurichshield.com
       'Provides lasting exterior protection from harmful UV rays, bird waste, tree sap, road salts, and other environmental damage.',
@@ -51,6 +57,7 @@ export const ADS = [
     logoHeight: 112,
     headline: 'Maintenance made easy',
     body: 'Keep upkeep simple with Bayside\'s oil change and tire rotation plans, handled right here at our King George store.',
+    teaser: 'Oil change and tire rotation plans at Bayside.',
     benefits: [
       'Oil change plans, handled at Bayside',
       'Tire rotation plans, kept simple',
@@ -89,6 +96,18 @@ export function gridAds(ads = ADS) {
 
 export function quoteAds(ads = ADS) {
   return enabledAds(ads).filter((ad) => ad.showOnQuote !== false);
+}
+
+export function findAd(id, ads = ADS) {
+  return enabledAds(ads).find((ad) => ad.id === id) || null;
+}
+
+/** One-line compact-card text: teaser, or the first sentence of the body. */
+export function adTeaser(ad) {
+  if (ad?.teaser) return String(ad.teaser);
+  const body = String(ad?.body || '').trim();
+  const cut = body.match(/^[^.!?]*[.!?]/);
+  return (cut ? cut[0] : body).trim();
 }
 
 /**
@@ -132,20 +151,151 @@ function colorStyle(ad) {
   return keys.filter(([k]) => c[k]).map(([k, css]) => `--ad-${css}:${c[k]}`).join(';');
 }
 
+function logoHtml(ad) {
+  if (!ad?.logo) return `<span class="ad-name">${esc(ad?.name)}</span>`;
+  const w = Number(ad.logoWidth) || '';
+  const h = Number(ad.logoHeight) || '';
+  const img = `<img class="ad-logo" src="${esc(ad.logo)}" alt="${esc(ad.logoAlt || ad.name)}" width="${w}" height="${h}">`;
+  return ad.logoPlate ? `<div class="ad-plate">${img}</div>` : img;
+}
+
+/** Compact card: same shape as a vehicle card (thumb, headline, one line, Learn more). */
 export function adCardHtml(ad, { variant = 'grid' } = {}) {
   if (!ad) return '';
-  const benefits = (ad.benefits || []).map((b) => `<li>${esc(b)}</li>`).join('');
-  const logo = ad.logo
-    ? `<img class="ad-logo" src="${esc(ad.logo)}" alt="${esc(ad.logoAlt || ad.name)}" width="${Number(ad.logoWidth) || ''}" height="${Number(ad.logoHeight) || ''}">`
-    : `<span class="ad-name">${esc(ad.name)}</span>`;
-  const brand = ad.logoPlate ? `<div class="ad-plate">${logo}</div>` : logo;
+  const id = esc(ad.id);
   return `
-  <aside class="ad-card ad-${esc(ad.theme || ad.id)}" data-ad="${esc(ad.id)}" data-variant="${esc(variant)}" style="${colorStyle(ad)}">
-    <div class="ad-brand">${brand}</div>
-    <h3 class="ad-headline">${esc(ad.headline || ad.name)}</h3>
+  <article class="ad-card ad-${esc(ad.theme || ad.id)}" data-ad="${id}" data-variant="${esc(variant)}" style="${colorStyle(ad)}">
+    <div class="ad-thumb">${logoHtml(ad)}</div>
+    <div class="ad-copy">
+      <div class="top"><span class="title ad-headline">${esc(ad.headline || ad.name)}</span></div>
+      <p class="ad-teaser">${esc(adTeaser(ad))}</p>
+      <div class="nums"><button type="button" class="ad-open" data-ad-open="${id}" aria-haspopup="dialog" aria-controls="ad-dialog">${esc(AD_OPEN_LABEL)}</button></div>
+    </div>
+  </article>`;
+}
+
+/** Full copy for the dialog: body, benefits, ask line, and the external CTA. */
+export function adDetailHtml(ad) {
+  if (!ad) return '';
+  const benefits = (ad.benefits || []).map((b) => `<li>${esc(b)}</li>`).join('');
+  return `
+    <div class="ad-dialog-brand">${logoHtml(ad)}</div>
+    <h2 class="ad-dialog-title" id="ad-dialog-title">${esc(ad.headline || ad.name)}</h2>
     ${ad.body ? `<p class="ad-body">${esc(ad.body)}</p>` : ''}
     ${benefits ? `<ul class="ad-benefits">${benefits}</ul>` : ''}
-    <a class="ad-cta" href="${esc(ad.url)}" target="_blank" rel="noopener">${esc(ad.cta || 'Learn more')}</a>
     ${ad.ask ? `<p class="ad-ask">${esc(ad.ask)}</p>` : ''}
-  </aside>`;
+    <a class="ad-cta" href="${esc(ad.url)}" target="_blank" rel="noopener">${esc(ad.cta || AD_OPEN_LABEL)}</a>`;
+}
+
+// ---------- accessible dialog ----------
+let rootEl = null;
+let lastOpener = null;
+let bound = false;
+
+function dialogPanel() {
+  return rootEl?.querySelector('.ad-dialog') || null;
+}
+
+function focusables(scope) {
+  if (!scope) return [];
+  return [...scope.querySelectorAll('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+    .filter((el) => !el.hasAttribute('disabled') && el.getAttribute('aria-hidden') !== 'true');
+}
+
+export function isAdDialogOpen() {
+  return Boolean(rootEl && !rootEl.hasAttribute('hidden'));
+}
+
+export function closeAdDialog() {
+  if (!isAdDialogOpen()) return;
+  rootEl.setAttribute('hidden', '');
+  document.body.classList.remove('ad-dialog-open');
+  const opener = lastOpener;
+  lastOpener = null;
+  if (opener && typeof opener.focus === 'function') {
+    try { opener.focus(); } catch { /* unmounted */ }
+  }
+}
+
+export function openAdDialog(ad, opener) {
+  if (!ad || typeof document === 'undefined') return;
+  ensureAdDialog();
+  const panel = dialogPanel();
+  const content = rootEl.querySelector('.ad-dialog-body');
+  content.innerHTML = adDetailHtml(ad);
+  rootEl.className = `ad-dialog-root ad-${ad.theme || ad.id}`;
+  rootEl.style.cssText = colorStyle(ad);
+  rootEl.removeAttribute('hidden');
+  document.body.classList.add('ad-dialog-open');
+  lastOpener = opener || document.activeElement;
+  const closeBtn = rootEl.querySelector('.ad-dialog-close');
+  (closeBtn || panel).focus();
+}
+
+function ensureAdDialog() {
+  if (rootEl || typeof document === 'undefined') return rootEl;
+  rootEl = document.createElement('div');
+  rootEl.id = 'ad-dialog-root';
+  rootEl.className = 'ad-dialog-root';
+  rootEl.setAttribute('hidden', '');
+  rootEl.innerHTML = `
+    <div class="ad-backdrop" data-ad-close tabindex="-1"></div>
+    <div class="ad-dialog" id="ad-dialog" role="dialog" aria-modal="true" aria-labelledby="ad-dialog-title" tabindex="-1">
+      <button type="button" class="ad-dialog-close" data-ad-close aria-label="Close">Close</button>
+      <div class="ad-dialog-body"></div>
+    </div>`;
+  document.body.appendChild(rootEl);
+  return rootEl;
+}
+
+function onDocClick(e) {
+  const closeBtn = e.target.closest('[data-ad-close]');
+  if (closeBtn && isAdDialogOpen()) {
+    e.preventDefault();
+    closeAdDialog();
+    return;
+  }
+  if (e.target.closest('.ad-dialog')) return;
+  const opener = e.target.closest('[data-ad-open], .ad-card');
+  if (!opener) return;
+  const card = opener.closest('.ad-card') || opener;
+  const ad = findAd(card.dataset.ad || opener.getAttribute('data-ad-open'));
+  if (!ad) return;
+  e.preventDefault();
+  openAdDialog(ad, opener.matches('button, [data-ad-open]') ? opener : card.querySelector('[data-ad-open]') || card);
+}
+
+function onDocKey(e) {
+  if (!isAdDialogOpen()) return;
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    closeAdDialog();
+    return;
+  }
+  if (e.key !== 'Tab') return;
+  const panel = dialogPanel();
+  const list = focusables(panel);
+  if (!list.length) {
+    e.preventDefault();
+    panel?.focus();
+    return;
+  }
+  const first = list[0];
+  const last = list[list.length - 1];
+  if (e.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) {
+    e.preventDefault();
+    first.focus();
+  }
+}
+
+/** Bind once. Compact cards open the shared dialog; Escape, backdrop, and Close dismiss it. */
+export function initAds() {
+  if (bound || typeof document === 'undefined') return;
+  bound = true;
+  ensureAdDialog();
+  document.addEventListener('click', onDocClick);
+  document.addEventListener('keydown', onDocKey);
 }

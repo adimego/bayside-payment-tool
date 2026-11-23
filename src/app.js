@@ -9,7 +9,7 @@ import { renderStaff, renderAdmin, renderSharedQuote, bindSaveQuote, updateStaff
 import { parseShareSlug } from './share.js';
 import { DOWN_CHIPS, normalizeDown, dealSummary, shopHintText } from './deal.js';
 import { initChat } from './chat-ui.js';
-import { ADS, interleaveAds, quoteAds, adCardHtml } from './ads.js';
+import { ADS, interleaveAds, quoteAds, adCardHtml, initAds } from './ads.js';
 
 const app = document.getElementById('app');
 let inventory = [];
@@ -538,6 +538,7 @@ async function start() {
   }
   lastPath = location.hash.split('?')[0];
   route();
+  initAds();
   initChat({
     getInventory: () => inventory,
     setDeal: (d) => {

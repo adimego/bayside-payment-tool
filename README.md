@@ -183,6 +183,7 @@ src/quote.js            quote and payment math, pure functions (browser, Node, D
 src/tax.js              ZIP lookup, tax rate, and out-of-state registration
 src/vauto-parse.js      vAuto rows → vehicle records, body → type, name → year/make/model/trim, CSV parser
 src/inventory.js        website link, similar vehicles, payment-goal finder, search
+src/custom-vehicle.js   one-off custom vehicle parse/encode (staff form + shareable #/c URL)
 src/ai-hook.js          rankSuggestions(): pass-through today; the AI phase plugs in here
 src/ads.js              ad catalog and shop-grid interleave (Zurich Shield, Bayside Maintenance)
 src/app.js              UI: shop list, vehicle quote page, find-by-payment, staff routes
@@ -222,6 +223,7 @@ The static site talks to the **Bayside Pricing Tool** Supabase project (`ilvebrd
 
 - **Staff** in the header opens sign in, password reset, and **Request an account** (name, email, password, optional phone).
 - A new signup creates a **pending** profile. Pending and denied users can see only their own profile. After an admin approves the request, staff can save quotes, search and delete their own quotes, and copy a customer link: `https://adimego.github.io/bayside-payment-tool/#/q/<slug>`.
+- Approved staff also get a **Custom vehicle** button on the shop page to quote a unit that is not in today's inventory (year, make, model, optional trim, new/used, selling price, optional mileage, stock, and VIN). The $995 processing fee, tax, rates, term caps, and military rebate use the same rules as in-stock vehicles. The quote is one-off: it is never added to the shop list. Copy quote link shares `#/c?...` with the vehicle in the URL, so a customer can open it without signing in and still will not see the APR.
 - The shared page is read-only: the saved vehicle and payment snapshot, the usual disclaimers, **Apply for Financing** and **Value My Trade**, and a **Prices and rates subject to change** note with the saved date. It shows the customer's first name only — no staff notes, no phone or email, no other staff internals.
 - **Admin** (approved admins only) has pending Approve/Deny, a staff list with Deactivate, and all quotes.
 - The public cannot `select` the `quotes` table. The only anonymous read is the `get_shared_quote(slug)` RPC.
@@ -253,7 +255,7 @@ where email = 'PASTE_EMAIL_HERE';
 
 ## Ad cards
 
-The shop grid shows a promotional card after every 6 vehicles, and the vehicle quote page shows the same cards next to the payment summary. Ads are not vehicles, so filters, sorting, counts, and Find by payment are unchanged. The catalog lives in `src/ads.js` (`ADS`); add an entry (and a logo under `assets/ads/` when needed) to show another card. Cards rotate when more than one ad is listed.
+The shop grid shows a promotional card after every 6 vehicles, and the vehicle quote page shows the same cards next to the payment summary. Compact cards use the same grid cell and shape as a vehicle card (logo where the photo goes, headline, one short line, and a Learn more button). Clicking the card or Learn more opens an accessible dialog with the full benefits, the ask line, and the external link (Escape, backdrop, or Close dismisses it and returns focus). Ads are not vehicles, so filters, sorting, counts, and Find by payment are unchanged. The catalog lives in `src/ads.js` (`ADS`); add an entry (and a logo under `assets/ads/` when needed) to show another card. Cards rotate when more than one ad is listed.
 
 Zurich Shield wording and colors come from [zurichshield.com](https://www.zurichshield.com/). Bayside Maintenance describes oil change and tire rotation plans at the store, with no prices or coverage terms.
 
