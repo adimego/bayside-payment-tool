@@ -11,11 +11,11 @@ export const MILITARY_REBATE = 500;     // Military / First Responder, taken off
 
 export const TERMS = [36, 48, 60, 72, 84];
 export const TIERS = [
-  { id: 'Poor', base: 20 },
-  { id: 'Fair', base: 16 },
-  { id: 'Good', base: 10 },
-  { id: 'Great', base: 8 },
-  { id: 'Excellent', base: 6 },
+  { id: 'Poor', base: 19.5 },
+  { id: 'Fair', base: 15.5 },
+  { id: 'Good', base: 9.5 },
+  { id: 'Great', base: 7.5 },
+  { id: 'Excellent', base: 5.5 },
 ];
 // The TIERS table is the 36-month APR for USED / pre-owned vehicles.
 // NEW vehicles are this many percentage points lower at every term.

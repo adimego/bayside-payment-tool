@@ -300,11 +300,15 @@ function renderShop() {
   draw();
 }
 
-function breakdownHtml(q) {
+function breakdownHtml(q, { staffApr = false } = {}) {
   const eq = q.tradeEquity;
+  const staffNote = staffApr && q.apr != null && q.apr !== ''
+    ? `<p class="staff-apr">Staff: APR ${(Number(q.apr) || 0).toFixed(2)}%</p>`
+    : '';
   return `
   <div class="big-pay"><div class="amt">${money(q.payment)}<span class="per">/mo</span></div>
-    <div class="sub">${q.term} months at ${(Number(q.apr) || 0).toFixed(1)}% APR (${esc(q.tier || '')} credit)</div></div>
+    <div class="sub">${q.term} months · ${esc(q.tier || '')} credit</div></div>
+  ${staffNote}
   <table class="breakdown">
     <tr><td>Total Selling Price <span class="hint">(incl. $${PROCESSING_FEE} processing fee)</span></td><td>${money(q.totalSellingPrice)}</td></tr>
     <tr class="plus"><td>${esc(q.taxLabel || ('Tax (' + (q.taxRate * 100).toFixed(2) + '%)'))}${q.taxableLabel ? `<span class="hint">${esc(q.taxableLabel)}</span>` : ''}</td><td>+${money(q.tax)}</td></tr>
@@ -382,7 +386,7 @@ function renderVehicle(stock, params) {
 
   if (!v.price) return;
   const draw = () => {
-    document.getElementById('quote').innerHTML = breakdownHtml(buildQuote({ ...d, vautoPrice: v.price, condition: v.condition, year: v.year, name: v.name }));
+    document.getElementById('quote').innerHTML = breakdownHtml(buildQuote({ ...d, vautoPrice: v.price, condition: v.condition, year: v.year, name: v.name }), { staffApr: isApprovedStaff() });
     deal = { ...d, term: preferredTerm }; saveDeal();
     history.replaceState(null, '', `#/vehicle/${encodeURIComponent(v.stock)}?${dealParams(d)}`);
   };

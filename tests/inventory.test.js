@@ -98,5 +98,5 @@ test('findByPaymentGoal uses each vehicle\'s own cap and new/used rate', () => {
   const neu = matches.find((m) => m.vehicle.stock === 'NEW');
   assert.ok(neu);
   assert.equal(neu.quote.term, 84);
-  assert.equal(neu.quote.apr, 11.5);
+  assert.equal(neu.quote.apr, 11);
 });

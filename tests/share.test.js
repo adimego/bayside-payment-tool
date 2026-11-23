@@ -78,6 +78,7 @@ test('quoteResultsSnapshot keeps the display fields and drops nothing required f
   });
   assert.equal(snap.outTheDoor, 28814.56);
   assert.equal(snap.payment, 548.46);
+  assert.equal(snap.apr, 11);
   assert.equal(snap.taxLabel.startsWith('Tax (NY'), true);
 });
 

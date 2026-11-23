@@ -245,7 +245,7 @@ export function promptFor(state, inventory = []) {
     case 'tier':
       return {
         id: 'tier',
-        text: 'Which credit tier is closest to yours? This only affects the estimated rate — it is not a credit check.',
+        text: 'Which credit tier is closest to yours? This only affects the estimated payment — it is not a credit check.',
         chips: ['Poor', 'Fair', 'Good', 'Great', 'Excellent'].map((t) => chip(t, t)),
       };
     case 'down':
