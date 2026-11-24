@@ -6,7 +6,8 @@ on:
     # During Eastern Daylight Time (UTC-4, mid-March to early November)
     # these fire at 10:00 AM and 12:00 PM ET — still after the 8:30 AM ET
     # vAuto email. GitHub cron can lag by a few minutes, which is fine.
-    - cron: '0 14 * * *'
+    - cron: '30 12 * * *'  # 7:30 AM EST / 8:30 AM EDT
+    - cron: '0 14 * * *'   # backup
     - cron: '0 16 * * *'
   workflow_dispatch:
 
