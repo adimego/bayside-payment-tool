@@ -1,6 +1,6 @@
 // Pure helpers for one-off custom vehicle quotes (staff form + shareable URL).
 // Never writes inventory.json; the vehicle lives only in the URL / sessionStorage.
-import { CURRENT_MODEL_YEAR } from './quote.js';
+import { CURRENT_MODEL_YEAR } from './quote.js?v=4384cec';
 
 export const CUSTOM_FORM_PATH = 'custom';
 export const CUSTOM_QUOTE_PATH = 'c';

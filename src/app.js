@@ -1,16 +1,16 @@
 // Bayside payment tool UI (phase 1: static, reads data/inventory.json).
-import { buildQuote, TIERS, TERMS, LINKS, DISCLAIMERS, PROCESSING_FEE, REGISTRATION, TAX_RATE, MILITARY_REBATE, isUsedVehicle, maxTermForYear, clampTerm, termCapNote } from './quote.js';
-import { setTaxTable, lookupJurisdiction, zipHint, applyZipToDeal, applyTaxPercentToDeal, formatTaxInputPct } from './tax.js';
-import { websiteUrl, similarVehicles, findByPaymentGoal, searchInventory, vehiclePhotoHtml } from './inventory.js';
-import { VEHICLE_TYPES } from './vauto-parse.js';
-import { rankSuggestions } from './ai-hook.js';
-import { initStaffAuth, onStaffChange, isApprovedStaff } from './staff.js';
-import { renderStaff, renderAdmin, renderSharedQuote, bindSaveQuote, updateStaffNav } from './staff-ui.js';
-import { parseShareSlug } from './share.js';
-import { CUSTOM_FORM_PATH, CUSTOM_QUOTE_PATH, validateCustomVehicle, parseCustomVehicle, customQuoteHash, writeCustomVehicle, readCustomVehicle, isCustomVehicle } from './custom-vehicle.js';
-import { DOWN_CHIPS, normalizeDown, dealSummary, shopHintText } from './deal.js';
-import { initChat } from './chat-ui.js';
-import { ADS, interleaveAds, quoteAds, adCardHtml, initAds } from './ads.js';
+import { buildQuote, TIERS, TERMS, LINKS, DISCLAIMERS, PROCESSING_FEE, REGISTRATION, TAX_RATE, MILITARY_REBATE, isUsedVehicle, maxTermForYear, clampTerm, termCapNote } from './quote.js?v=4384cec';
+import { setTaxTable, lookupJurisdiction, zipHint, applyZipToDeal, applyTaxPercentToDeal, formatTaxInputPct } from './tax.js?v=4384cec';
+import { websiteUrl, similarVehicles, findByPaymentGoal, searchInventory, vehiclePhotoHtml } from './inventory.js?v=4384cec';
+import { VEHICLE_TYPES } from './vauto-parse.js?v=4384cec';
+import { rankSuggestions } from './ai-hook.js?v=4384cec';
+import { initStaffAuth, onStaffChange, isApprovedStaff } from './staff.js?v=4384cec';
+import { renderStaff, renderAdmin, renderSharedQuote, bindSaveQuote, updateStaffNav } from './staff-ui.js?v=4384cec';
+import { parseShareSlug } from './share.js?v=4384cec';
+import { CUSTOM_FORM_PATH, CUSTOM_QUOTE_PATH, validateCustomVehicle, parseCustomVehicle, customQuoteHash, writeCustomVehicle, readCustomVehicle, isCustomVehicle } from './custom-vehicle.js?v=4384cec';
+import { DOWN_CHIPS, normalizeDown, dealSummary, shopHintText } from './deal.js?v=4384cec';
+import { initChat } from './chat-ui.js?v=4384cec';
+import { ADS, interleaveAds, quoteAds, adCardHtml, initAds } from './ads.js?v=4384cec';
 
 const app = document.getElementById('app');
 let inventory = [];

@@ -1,7 +1,7 @@
 // Staff auth, saved quotes, and the admin approval screen.
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { SUPABASE_URL, SUPABASE_ANON_KEY, SITE_URL } from './supabase-config.js';
-import { quoteVehicleSnapshot, quoteDealSnapshot, quoteResultsSnapshot } from './share.js';
+import { SUPABASE_URL, SUPABASE_ANON_KEY, SITE_URL } from './supabase-config.js?v=4384cec';
+import { quoteVehicleSnapshot, quoteDealSnapshot, quoteResultsSnapshot } from './share.js?v=4384cec';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {

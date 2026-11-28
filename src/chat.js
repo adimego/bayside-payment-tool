@@ -8,11 +8,11 @@
 // returns a prompt, the UI uses that; otherwise it uses these scripted
 // prompts. Match payments must still come from findMatches().
 
-import { buildQuote, LINKS } from './quote.js';
-import { findByPaymentGoal } from './inventory.js';
-import { VEHICLE_TYPES } from './vauto-parse.js';
-import { DOWN_CHIPS, normalizeDown, normalizeTier, dealSummary } from './deal.js';
-import { lookupJurisdiction } from './tax.js';
+import { buildQuote, LINKS } from './quote.js?v=4384cec';
+import { findByPaymentGoal } from './inventory.js?v=4384cec';
+import { VEHICLE_TYPES } from './vauto-parse.js?v=4384cec';
+import { DOWN_CHIPS, normalizeDown, normalizeTier, dealSummary } from './deal.js?v=4384cec';
+import { lookupJurisdiction } from './tax.js?v=4384cec';
 
 export const CHAT_STORAGE_KEY = 'bayside.chat.v1';
 export const PAGE_SIZE = 5;

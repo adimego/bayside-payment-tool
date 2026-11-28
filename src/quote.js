@@ -2,7 +2,7 @@
 // Pure functions only (no DOM), so the same module runs in the browser,
 // in Node tests, and later in a Supabase Edge Function (Deno).
 
-import { lookupJurisdiction, taxLineLabel, stateTaxableBase, taxableAmountLabel, OUT_OF_STATE_DISCLAIMER, VA_TAX_RATE, VA_REGISTRATION } from './tax.js';
+import { lookupJurisdiction, taxLineLabel, stateTaxableBase, taxableAmountLabel, OUT_OF_STATE_DISCLAIMER, VA_TAX_RATE, VA_REGISTRATION } from './tax.js?v=4384cec';
 
 export const PROCESSING_FEE = 995;      // added to the vAuto price (feed leaves it out)
 export const TAX_RATE = VA_TAX_RATE;    // default VA rate on the full Total Selling Price, no trade credit

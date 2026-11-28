@@ -8,10 +8,10 @@ import {
   CHAT_STORAGE_KEY, PAGE_SIZE, GREETING, DEALER_PHONE, DEALER_TEL, DEALER_SITE,
   LINKS, freshState, promptFor, applyAnswer, goBack, canGoBack, answerLabel,
   findMatches, resultsIntro, answersToDeal, serializeChat, deserializeChat,
-} from './chat.js';
-import { chatTurn, rankSuggestions } from './ai-hook.js';
-import { vehiclePhotoHtml } from './inventory.js';
-import { dealParamsFromSnapshot } from './share.js';
+} from './chat.js?v=4384cec';
+import { chatTurn, rankSuggestions } from './ai-hook.js?v=4384cec';
+import { vehiclePhotoHtml } from './inventory.js?v=4384cec';
+import { dealParamsFromSnapshot } from './share.js?v=4384cec';
 
 const money = (n) => (Number.isFinite(Number(n)) ? Number(n) : 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 const money0 = (n) => (Number(n) || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
