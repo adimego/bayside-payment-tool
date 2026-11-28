@@ -5,3 +5,4 @@ node_modules/
 supabase/.temp/
 __pycache__/
 *.py[cod]
+supabase/functions/.env

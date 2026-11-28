@@ -192,6 +192,7 @@ src/staff.js            Supabase client, auth, saved quotes, admin API
 src/staff-ui.js         Staff, admin, and public shared-quote screens
 src/supabase-config.js  project URL and the public publishable (anon) key
 supabase/migrations/    Postgres schema applied to the Bayside Pricing Tool project
+supabase/functions/     Edge Functions, including the pending-staff email alert
 scripts/import-vauto.mjs  report (.pdf/.xlsx/.csv) → data/inventory.json
 scripts/import-vauto-email.py  daily Gmail fetch + safety checks + inventory write
 scripts/parse-vauto-pdf.py     AI Inventory Feed PDF → CSV
@@ -223,6 +224,7 @@ The static site talks to the **Bayside Pricing Tool** Supabase project (`ilvebrd
 
 - **Staff** in the header opens sign in, password reset, and **Request an account** (name, email, password, optional phone).
 - A new signup creates a **pending** profile. Pending and denied users can see only their own profile. After an admin approves the request, staff can save quotes, search and delete their own quotes, and copy a customer link: `https://adimego.github.io/bayside-payment-tool/#/q/<slug>`.
+- When a profile is created as pending, or later set back to pending, the `notify-pending-staff` Edge Function emails `baysidekg@gmail.com` with the requester's name, email, signup time, and a link to `#/admin`. A database trigger calls the function over `pg_net`. A notification failure is logged and never blocks signup. Gmail credentials and the hook secret live in Edge Function secrets and Vault, not in this repo.
 - Approved staff also get a **Custom vehicle** button on the shop page to quote a unit that is not in today's inventory (year, make, model, optional trim, new/used, selling price, optional mileage, stock, and VIN). The $995 processing fee, tax, rates, term caps, and military rebate use the same rules as in-stock vehicles. The quote is one-off: it is never added to the shop list. Copy quote link shares `#/c?...` with the vehicle in the URL, so a customer can open it without signing in and still will not see the APR.
 - The shared page is read-only: the saved vehicle and payment snapshot, the usual disclaimers, **Apply for Financing** and **Value My Trade**, and a **Prices and rates subject to change** note with the saved date. It shows the customer's first name only — no staff notes, no phone or email, no other staff internals.
 - **Admin** (approved admins only) has pending Approve/Deny, a staff list with Deactivate, and all quotes.
