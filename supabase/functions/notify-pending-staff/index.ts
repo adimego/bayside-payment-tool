@@ -4,7 +4,10 @@
 
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
-const ADMIN_EMAIL = Deno.env.get("ADMIN_EMAIL") ?? "baysidekg@gmail.com";
+const ALERT_TO =
+  Deno.env.get("ALERT_TO") ??
+  Deno.env.get("ADMIN_EMAIL") ??
+  "baysidekg@gmail.com";
 const GMAIL_USER = Deno.env.get("GMAIL_USER") ?? "baysidekg@gmail.com";
 const GMAIL_APP_PASSWORD = (Deno.env.get("GMAIL_APP_PASSWORD") ?? "").replaceAll(" ", "");
 const HOOK_SECRET = Deno.env.get("NOTIFY_PENDING_STAFF_SECRET") ?? "";
@@ -142,7 +145,7 @@ Deno.serve(async (req) => {
   try {
     await client.send({
       from: `${FROM_NAME} <${GMAIL_USER}>`,
-      to: ADMIN_EMAIL,
+      to: ALERT_TO,
       subject,
       content: text,
       html,
